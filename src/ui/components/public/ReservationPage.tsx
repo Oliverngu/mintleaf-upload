@@ -294,14 +294,14 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ unitId, allUnits, cur
             setStep(3);
         } catch (err: unknown) {
             console.error("Error during reservation submission:", err);
-            // FIX: Robust error handling for unknown type in catch block.
-            let errorMessage = t.genericError;
+            // FIX: The caught error `err` is of type `unknown` and cannot be directly passed to `setError`, which expects a string. Type checking is added to handle `err` safely.
             if (err instanceof Error) {
-                errorMessage = err.message;
-            } else if (typeof err === 'string') {
-                errorMessage = err;
+                setError(err.message);
+            } else if (typeof err === "string") {
+                setError(err);
+            } else {
+                setError(t.genericError);
             }
-            setError(errorMessage);
         } finally {
             setIsSubmitting(false);
         }

@@ -5,7 +5,7 @@ import { doc, getDoc, collection, addDoc, setDoc, query, where, getDocs } from '
 import LoadingSpinner from '../LoadingSpinner';
 import CalendarIcon from '../icons/CalendarIcon';
 import CopyIcon from '../icons/CopyIcon'; // Új import
-import { translations } from '../../lib/i1n'; // Import a kiszervezett fájlból
+import { translations } from '../../src/lib/i18n'; // Import a kiszervezett fájlból
 import { sendEmail, createGuestReservationConfirmationEmail, createUnitNewReservationNotificationEmail } from '../../core/api/emailService';
 
 type Locale = 'hu' | 'en';
@@ -292,14 +292,14 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ unitId, allUnits, cur
             setStep(3);
         } catch (err: unknown) {
             console.error("Error during reservation submission:", err);
-            // FIX: Robust error handling for unknown type in catch block.
-            let errorMessage = t.genericError;
+            // FIX: The caught error `err` is of type `unknown` and cannot be directly passed to `setError`, which expects a string. Type checking is added to handle `err` safely.
             if (err instanceof Error) {
-                errorMessage = err.message;
+                setError(err.message);
             } else if (typeof err === "string") {
-                errorMessage = err;
+                setError(err);
+            } else {
+                setError(t.genericError);
             }
-            setError(errorMessage);
         } finally {
             setIsSubmitting(false);
         }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { User } from '../../core/models/data';
+import { User, FileMetadata } from '../../core/models/data';
 import { db, storage, serverTimestamp, Timestamp } from '../../core/firebase/config';
 import { collection, onSnapshot, query, orderBy, addDoc, doc, deleteDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -11,28 +11,13 @@ import PlusIcon from '../icons/PlusIcon';
 import ArrowUpIcon from '../icons/ArrowUpIcon';
 import ArrowDownIcon from '../icons/ArrowDownIcon';
 
-// Interface for documents in the knowledge base
-interface KnowledgeDoc {
-  id: string;
-  title: string;
-  description: string;
-  storagePath: string;
-  downloadUrl: string;
-  fileSize: number;
-  mimeType: string;
-  uploadedBy: string;
-  uploadedByName: string;
-  createdAt: Timestamp;
-  sortOrder: number;
-}
-
 interface TudastarAppProps {
   currentUser: User;
   activeUnitIds: string[];
 }
 
 const TudastarApp: React.FC<TudastarAppProps> = ({ currentUser, activeUnitIds }) => {
-    const [documents, setDocuments] = useState<KnowledgeDoc[]>([]);
+    const [documents, setDocuments] = useState<FileMetadata[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState('');
@@ -53,10 +38,10 @@ const TudastarApp: React.FC<TudastarAppProps> = ({ currentUser, activeUnitIds })
 
         setIsLoading(true);
         const collectionRef = collection(db, 'units', activeUnitId, 'knowledge_base');
-        const q = query(collectionRef, orderBy('sortOrder', 'asc'), orderBy('createdAt', 'desc'));
+        const q = query(collectionRef, orderBy('sortOrder', 'asc'), orderBy('uploadedAt', 'desc'));
 
         const unsubscribe = onSnapshot(q, snapshot => {
-            const fetchedDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as KnowledgeDoc));
+            const fetchedDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FileMetadata));
             setDocuments(fetchedDocs);
             setIsLoading(false);
         }, err => {
@@ -79,27 +64,28 @@ const TudastarApp: React.FC<TudastarAppProps> = ({ currentUser, activeUnitIds })
 
         try {
             // Determine the sort order for the new document
-            const maxOrder = documents.reduce((max, doc) => Math.max(max, doc.sortOrder), -1);
+            const maxOrder = documents.reduce((max, doc) => Math.max(max, doc.sortOrder || -1), -1);
             const newSortOrder = maxOrder + 1;
 
             // Upload to Storage
             const storagePath = `units/${activeUnitId}/knowledge_base/${Date.now()}_${file.name}`;
             const storageRef = ref(storage, storagePath);
-            await uploadBytes(storageRef, file);
-            const downloadUrl = await getDownloadURL(storageRef);
+            const uploadResult = await uploadBytes(storageRef, file);
+            const downloadUrl = await getDownloadURL(uploadResult.ref);
 
             // Create Firestore document
             await addDoc(collection(db, 'units', activeUnitId, 'knowledge_base'), {
-                title: file.name.replace(/\.[^/.]+$/, ""), // Remove extension for default title
+                name: file.name.replace(/\.[^/.]+$/, ""), // Use 'name' instead of 'title'
                 description: '',
+                url: downloadUrl, // Use 'url' instead of 'downloadUrl'
                 storagePath,
-                downloadUrl,
-                fileSize: file.size,
-                mimeType: file.type,
-                uploadedBy: currentUser.id,
-                uploadedByName: currentUser.fullName,
-                createdAt: serverTimestamp(),
+                size: file.size, // Use 'size' instead of 'fileSize'
+                contentType: file.type, // Use 'contentType' instead of 'mimeType'
+                uploadedBy: currentUser.fullName, // Use full name for 'uploadedBy'
+                uploadedByUid: currentUser.id, // Add 'uploadedByUid'
+                uploadedAt: serverTimestamp(), // Use 'uploadedAt'
                 sortOrder: newSortOrder,
+                unitId: activeUnitId, // Add 'unitId'
             });
         } catch (err) {
             console.error("Error uploading file:", err);
@@ -112,7 +98,7 @@ const TudastarApp: React.FC<TudastarAppProps> = ({ currentUser, activeUnitIds })
     };
     
     // Edit handlers
-    const handleUpdateDoc = async (docId: string, field: 'title' | 'description', value: string) => {
+    const handleUpdateDoc = async (docId: string, field: 'name' | 'description', value: string) => {
         if (!activeUnitId) return;
         const docRef = doc(db, 'units', activeUnitId, 'knowledge_base', docId);
         await updateDoc(docRef, { [field]: value });
@@ -139,8 +125,8 @@ const TudastarApp: React.FC<TudastarAppProps> = ({ currentUser, activeUnitIds })
         await batch.commit();
     };
     
-    const handleDelete = async (document: KnowledgeDoc) => {
-        if (!activeUnitId || !window.confirm(`Biztosan törölni szeretnéd a(z) "${document.title}" dokumentumot?`)) return;
+    const handleDelete = async (document: FileMetadata) => {
+        if (!activeUnitId || !window.confirm(`Biztosan törölni szeretnéd a(z) "${document.name}" dokumentumot?`)) return;
 
         try {
             // Delete from storage
@@ -210,8 +196,8 @@ const TudastarApp: React.FC<TudastarAppProps> = ({ currentUser, activeUnitIds })
                 </div>
             ) : (
                  <div className="space-y-4">
-                    {documents.map((doc, index) => (
-                        <div key={doc.id} className="bg-white p-4 rounded-xl shadow-md border flex items-start gap-4">
+                    {documents.map((docItem, index) => (
+                        <div key={docItem.id} className="bg-white p-4 rounded-xl shadow-md border flex items-start gap-4">
                             {isEditMode && canManage && (
                                 <div className="flex flex-col items-center gap-1 pt-1">
                                     <button onClick={() => handleMove(index, 'up')} disabled={index === 0} className="p-1 disabled:opacity-30"><ArrowUpIcon className="h-5 w-5" /></button>
@@ -223,13 +209,13 @@ const TudastarApp: React.FC<TudastarAppProps> = ({ currentUser, activeUnitIds })
                                     <div className="space-y-2">
                                         <input 
                                             type="text"
-                                            defaultValue={doc.title}
-                                            onBlur={(e) => handleUpdateDoc(doc.id, 'title', e.target.value)}
+                                            defaultValue={docItem.name}
+                                            onBlur={(e) => handleUpdateDoc(docItem.id, 'name', e.target.value)}
                                             className="w-full font-semibold text-lg p-1 border rounded"
                                         />
                                         <textarea
-                                            defaultValue={doc.description}
-                                            onBlur={(e) => handleUpdateDoc(doc.id, 'description', e.target.value)}
+                                            defaultValue={docItem.description}
+                                            onBlur={(e) => handleUpdateDoc(docItem.id, 'description', e.target.value)}
                                             placeholder="Leírás..."
                                             rows={2}
                                             className="w-full text-sm p-1 border rounded"
@@ -237,20 +223,20 @@ const TudastarApp: React.FC<TudastarAppProps> = ({ currentUser, activeUnitIds })
                                     </div>
                                 ) : (
                                     <>
-                                        <h3 className="font-semibold text-lg text-gray-800">{doc.title}</h3>
-                                        {doc.description && <p className="text-sm text-gray-600 mt-1">{doc.description}</p>}
+                                        <h3 className="font-semibold text-lg text-gray-800">{docItem.name}</h3>
+                                        {docItem.description && <p className="text-sm text-gray-600 mt-1">{docItem.description}</p>}
                                     </>
                                 )}
                                 <p className="text-xs text-gray-400 mt-2">
-                                    Feltöltötte: {doc.uploadedByName} - {doc.createdAt?.toDate().toLocaleDateString('hu-HU')} ({formatBytes(doc.fileSize)})
+                                    Feltöltötte: {docItem.uploadedBy} - {docItem.uploadedAt?.toDate().toLocaleDateString('hu-HU')} ({formatBytes(docItem.size)})
                                 </p>
                             </div>
                              <div className="flex items-center gap-2 flex-shrink-0">
-                                <a href={doc.downloadUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-100 rounded-full" title="Megnyitás/Letöltés">
+                                <a href={docItem.url} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-100 rounded-full" title="Megnyitás/Letöltés">
                                     <DownloadIcon className="h-5 w-5" />
                                 </a>
                                 {isEditMode && canManage && (
-                                    <button onClick={() => handleDelete(doc)} className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-100 rounded-full" title="Törlés">
+                                    <button onClick={() => handleDelete(docItem)} className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-100 rounded-full" title="Törlés">
                                         <TrashIcon className="h-5 w-5" />
                                     </button>
                                 )}

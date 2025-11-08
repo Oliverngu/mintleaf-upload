@@ -1,164 +1,142 @@
-import React, { useState, useEffect, useMemo, FC, useCallback } from 'react';
-import { User, Unit, FileMetadata } from '../../../core/models/data';
-import { db, storage, serverTimestamp } from '../../../core/firebase/config';
-import { collection, onSnapshot, query, where, orderBy, addDoc, doc, deleteDoc, Timestamp } from 'firebase/firestore';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { User, FileMetadata } from '../../../core/models/data';
+import { db, storage, serverTimestamp, Timestamp } from '../../../core/firebase/config';
+import { collection, onSnapshot, query, orderBy, addDoc, doc, deleteDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import LoadingSpinner from '../../../../components/LoadingSpinner';
 import BookIcon from '../../../../components/icons/BookIcon';
+import LoadingSpinner from '../../../../components/LoadingSpinner';
 import TrashIcon from '../../../../components/icons/TrashIcon';
 import DownloadIcon from '../../../../components/icons/DownloadIcon';
 import PlusIcon from '../../../../components/icons/PlusIcon';
+import ArrowUpIcon from '../../../../components/icons/ArrowUpIcon';
+import ArrowDownIcon from '../../../../components/icons/ArrowDownIcon';
 
 interface TudastarAppProps {
   currentUser: User;
-  allUnits?: Unit[];
-  activeUnitIds?: string[];
+  activeUnitIds: string[];
 }
 
-const FileUploadModal: FC<{
-    onClose: () => void;
-    currentUser: User;
-    allUnits: Unit[];
-}> = ({ onClose, currentUser, allUnits }) => {
-    const [file, setFile] = useState<File | null>(null);
-    const [unitId, setUnitId] = useState(currentUser.role === 'Admin' ? 'central' : currentUser.unitIds?.[0] || '');
+const TudastarApp: React.FC<TudastarAppProps> = ({ currentUser, activeUnitIds }) => {
+    const [documents, setDocuments] = useState<FileMetadata[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState('');
+    const [isEditMode, setIsEditMode] = useState(false);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setFile(e.target.files[0]);
-        }
-    };
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleUpload = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!file) {
-            setError('Nincs fájl kiválasztva.');
-            return;
-        }
-        if (!unitId) {
-            setError('Nincs egység kiválasztva.');
+    const activeUnitId = useMemo(() => activeUnitIds.length === 1 ? activeUnitIds[0] : null, [activeUnitIds]);
+    const canManage = currentUser.role === 'Admin' || currentUser.role === 'Unit Admin';
+
+    // Data fetching
+    useEffect(() => {
+        if (!activeUnitId) {
+            setDocuments([]);
+            setIsLoading(false);
             return;
         }
 
+        setIsLoading(true);
+        const collectionRef = collection(db, 'units', activeUnitId, 'knowledge_base');
+        const q = query(collectionRef, orderBy('sortOrder', 'asc'), orderBy('uploadedAt', 'desc'));
+
+        const unsubscribe = onSnapshot(q, snapshot => {
+            const fetchedDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FileMetadata));
+            setDocuments(fetchedDocs);
+            setIsLoading(false);
+        }, err => {
+            console.error("Error fetching knowledge base:", err);
+            setError("Hiba a dokumentumok betöltésekor.");
+            setIsLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, [activeUnitId]);
+    
+    // File upload handler
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0 || !activeUnitId) {
+            return;
+        }
+        const file = e.target.files[0];
         setIsUploading(true);
         setError('');
 
         try {
-            // 1. Upload file to Firebase Storage
-            const storagePath = `tudastar/${unitId}/${Date.now()}_${file.name}`;
+            const maxOrder = documents.reduce((max, doc) => Math.max(max, doc.sortOrder || -1), -1);
+            const newSortOrder = maxOrder + 1;
+
+            const storagePath = `units/${activeUnitId}/knowledge_base/${Date.now()}_${file.name}`;
             const storageRef = ref(storage, storagePath);
             const uploadResult = await uploadBytes(storageRef, file);
-            const downloadURL = await getDownloadURL(uploadResult.ref);
+            const downloadUrl = await getDownloadURL(uploadResult.ref);
 
-            // 2. Create metadata document in Firestore
-            const fileMetadata: Omit<FileMetadata, 'id'> = {
-                name: file.name,
-                url: downloadURL,
-                storagePath: storagePath,
+            await addDoc(collection(db, 'units', activeUnitId, 'knowledge_base'), {
+                name: file.name.replace(/\.[^/.]+$/, ""),
+                description: '',
+                url: downloadUrl,
+                storagePath,
                 size: file.size,
                 contentType: file.type,
                 uploadedBy: currentUser.fullName,
                 uploadedByUid: currentUser.id,
-                uploadedAt: serverTimestamp() as Timestamp,
-                unitId: unitId,
-            };
-
-            await addDoc(collection(db, 'files'), fileMetadata);
-            onClose();
-
+                uploadedAt: serverTimestamp(),
+                sortOrder: newSortOrder,
+                unitId: activeUnitId,
+            });
         } catch (err) {
             console.error("Error uploading file:", err);
-            setError("Hiba a fájl feltöltése során.");
+            setError("Hiba a fájl feltöltésekor.");
         } finally {
             setIsUploading(false);
+            if(fileInputRef.current) fileInputRef.current.value = "";
         }
     };
-
-    return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
-                <form onSubmit={handleUpload}>
-                    <div className="p-5 border-b">
-                        <h2 className="text-xl font-bold text-gray-800">Új dokumentum feltöltése</h2>
-                    </div>
-                    <div className="p-6 space-y-4">
-                        <div>
-                            <label className="text-sm font-medium">Fájl kiválasztása</label>
-                            <input type="file" onChange={handleFileChange} className="w-full mt-1 p-2 border rounded-lg" required />
-                        </div>
-                        <div>
-                            <label className="text-sm font-medium">Hova tartozik?</label>
-                            <select value={unitId} onChange={e => setUnitId(e.target.value)} className="w-full mt-1 p-2 border rounded-lg bg-white" required>
-                                <option value="" disabled>Válassz...</option>
-                                {currentUser.role === 'Admin' && <option value="central">Mindenki (központi)</option>}
-                                {allUnits.filter(u => currentUser.unitIds?.includes(u.id) || currentUser.role === 'Admin').map(unit => (
-                                    <option key={unit.id} value={unit.id}>{unit.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                        {error && <p className="text-red-500">{error}</p>}
-                    </div>
-                    <div className="p-4 bg-gray-50 flex justify-end gap-3 rounded-b-2xl">
-                        <button type="button" onClick={onClose} className="bg-gray-200 px-4 py-2 rounded-lg font-semibold">Mégse</button>
-                        <button type="submit" disabled={isUploading} className="bg-green-700 text-white px-4 py-2 rounded-lg font-semibold disabled:bg-gray-400">
-                            {isUploading ? 'Feltöltés...' : 'Feltöltés'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
-};
-
-
-const TudastarApp: React.FC<TudastarAppProps> = ({ currentUser, allUnits = [], activeUnitIds = [] }) => {
-    const [files, setFiles] = useState<FileMetadata[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     
-    const canManage = currentUser.role === 'Admin' || currentUser.role === 'Unit Admin';
+    // Edit handlers
+    const handleUpdateDoc = async (docId: string, field: 'name' | 'description', value: string) => {
+        if (!activeUnitId) return;
+        const docRef = doc(db, 'units', activeUnitId, 'knowledge_base', docId);
+        await updateDoc(docRef, { [field]: value });
+    };
 
-    useEffect(() => {
-        setLoading(true);
-        const unitIdsToQuery = ['central', ...activeUnitIds];
+    const handleMove = async (index: number, direction: 'up' | 'down') => {
+        if (!activeUnitId) return;
         
-        const filesQuery = query(
-            collection(db, 'files'), 
-            where('unitId', 'in', unitIdsToQuery),
-            orderBy('uploadedAt', 'desc')
-        );
+        const newIndex = direction === 'up' ? index - 1 : index + 1;
+        if (newIndex < 0 || newIndex >= documents.length) return;
 
-        const unsubscribe = onSnapshot(filesQuery, snapshot => {
-            const fetchedFiles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FileMetadata));
-            setFiles(fetchedFiles);
-            setLoading(false);
-        }, err => {
-            console.error("Error fetching files:", err);
-            setError("Hiba a dokumentumok betöltésekor.");
-            setLoading(false);
+        const newDocuments = [...documents];
+        [newDocuments[index], newDocuments[newIndex]] = [newDocuments[newIndex], newDocuments[index]];
+
+        setDocuments(newDocuments);
+
+        const batch = writeBatch(db);
+        newDocuments.forEach((docData, i) => {
+            const docRef = doc(db, 'units', activeUnitId, 'knowledge_base', docData.id);
+            batch.update(docRef, { sortOrder: i });
         });
+        await batch.commit();
+    };
+    
+    const handleDelete = async (document: FileMetadata) => {
+        if (!activeUnitId || !window.confirm(`Biztosan törölni szeretnéd a(z) "${document.name}" dokumentumot?`)) return;
 
-        return () => unsubscribe();
-    }, [activeUnitIds]);
-
-    const handleDeleteFile = async (file: FileMetadata) => {
-        if (window.confirm(`Biztosan törölni szeretnéd a(z) "${file.name}" fájlt?`)) {
-            try {
-                // Delete from Storage
-                const storageRef = ref(storage, file.storagePath);
-                await deleteObject(storageRef);
-                // Delete from Firestore
-                await deleteDoc(doc(db, 'files', file.id));
-            } catch (err) {
-                console.error("Error deleting file:", err);
-                alert("Hiba a fájl törlése során.");
+        try {
+            const storageRef = ref(storage, document.storagePath);
+            await deleteObject(storageRef);
+            await deleteDoc(doc(db, 'units', activeUnitId, 'knowledge_base', document.id));
+        } catch (err: any) {
+            if (err.code === 'storage/object-not-found') {
+                console.warn("Storage object not found, deleting Firestore doc anyway.");
+                await deleteDoc(doc(db, 'units', activeUnitId, 'knowledge_base', document.id));
+            } else {
+                console.error("Error deleting document:", err);
+                setError("Hiba a törlés során.");
             }
         }
     };
-    
+
     const formatBytes = (bytes: number, decimals = 2) => {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
@@ -167,75 +145,96 @@ const TudastarApp: React.FC<TudastarAppProps> = ({ currentUser, allUnits = [], a
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
     };
-
-    const filesByUnit = useMemo(() => {
-        const grouped: { [key: string]: FileMetadata[] } = {};
-        const centralUnit = { id: 'central', name: 'Központi Dokumentumok' };
-        const displayUnits = [centralUnit, ...allUnits];
-
-        files.forEach(file => {
-            const unitName = displayUnits.find(u => u.id === file.unitId)?.name || 'Ismeretlen';
-            if (!grouped[unitName]) {
-                grouped[unitName] = [];
-            }
-            grouped[unitName].push(file);
-        });
-        return Object.entries(grouped);
-    }, [files, allUnits]);
-
+    
+    if (!activeUnitId) {
+         return (
+            <div className="p-4 md:p-8 flex items-center justify-center h-full text-center">
+                <div>
+                    <BookIcon className="h-16 w-16 text-gray-400 mx-auto mb-4"/>
+                    <h2 className="text-2xl font-bold text-gray-700">Válassz egy egységet</h2>
+                    <p className="mt-2 text-gray-600">A Tudástár használatához kérlek, válassz ki egyetlen egységet a fejlécben.</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="p-4 md:p-8">
-            {isUploadModalOpen && <FileUploadModal onClose={() => setIsUploadModalOpen(false)} currentUser={currentUser} allUnits={allUnits} />}
+            <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold text-gray-800">Tudástár</h1>
                 {canManage && (
-                    <button onClick={() => setIsUploadModalOpen(true)} className="bg-green-700 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-800 flex items-center gap-2">
-                        <PlusIcon className="h-5 w-5" />
-                        Új feltöltése
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => fileInputRef.current?.click()} disabled={isUploading} className="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center gap-2 disabled:bg-gray-400">
+                           {isUploading ? <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div> : <PlusIcon className="h-5 w-5" />}
+                            Feltöltés
+                        </button>
+                        <button onClick={() => setIsEditMode(!isEditMode)} className={`${isEditMode ? 'bg-green-700 text-white' : 'bg-gray-200 text-gray-800'} font-semibold py-2 px-4 rounded-lg hover:bg-gray-300`}>
+                            {isEditMode ? 'Kész' : 'Szerkesztés'}
+                        </button>
+                    </div>
                 )}
             </div>
-            
-            {loading && <div className="relative h-64"><LoadingSpinner /></div>}
-            {error && <div className="bg-red-100 p-4 rounded-lg text-red-700">{error}</div>}
-            
-            {!loading && !error && files.length === 0 ? (
+
+            {error && <div className="bg-red-100 p-4 rounded-lg text-red-700 mb-4">{error}</div>}
+
+            {isLoading ? <div className="relative h-64"><LoadingSpinner /></div> : 
+             documents.length === 0 ? (
                 <div className="text-center py-16 border-2 border-dashed border-gray-300 rounded-xl">
                     <BookIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-xl font-semibold text-gray-700">A tudástár üres</h3>
                     <p className="text-gray-500 mt-1">{canManage ? 'Tölts fel egy dokumentumot a kezdéshez.' : 'Nincsenek elérhető dokumentumok.'}</p>
                 </div>
             ) : (
-                <div className="space-y-8">
-                    {filesByUnit.map(([unitName, unitFiles]) => (
-                        <div key={unitName}>
-                            <h2 className="text-2xl font-bold text-gray-800 mb-4 pb-2 border-b-2 border-gray-200">{unitName}</h2>
-                            <div className="space-y-3">
-                                {unitFiles.map(file => (
-                                    <div key={file.id} className="bg-white p-4 rounded-xl shadow-md border flex items-center justify-between">
-                                        <div>
-                                            <p className="font-semibold text-gray-800">{file.name}</p>
-                                            <p className="text-sm text-gray-500">
-                                                {formatBytes(file.size)} - Feltöltötte: {file.uploadedBy} - {file.uploadedAt.toDate().toLocaleDateString('hu-HU')}
-                                            </p>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <a href={file.url} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-100 rounded-full" title="Letöltés">
-                                                <DownloadIcon className="h-5 w-5" />
-                                            </a>
-                                            {canManage && (
-                                                <button onClick={() => handleDeleteFile(file)} className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-100 rounded-full" title="Törlés">
-                                                    <TrashIcon className="h-5 w-5" />
-                                                </button>
-                                            )}
-                                        </div>
+                 <div className="space-y-4">
+                    {documents.map((docItem, index) => (
+                        <div key={docItem.id} className="bg-white p-4 rounded-xl shadow-md border flex items-start gap-4">
+                            {isEditMode && canManage && (
+                                <div className="flex flex-col items-center gap-1 pt-1">
+                                    <button onClick={() => handleMove(index, 'up')} disabled={index === 0} className="p-1 disabled:opacity-30"><ArrowUpIcon className="h-5 w-5" /></button>
+                                    <button onClick={() => handleMove(index, 'down')} disabled={index === documents.length - 1} className="p-1 disabled:opacity-30"><ArrowDownIcon className="h-5 w-5" /></button>
+                                </div>
+                            )}
+                            <div className="flex-grow">
+                                {isEditMode && canManage ? (
+                                    <div className="space-y-2">
+                                        <input 
+                                            type="text"
+                                            defaultValue={docItem.name}
+                                            onBlur={(e) => handleUpdateDoc(docItem.id, 'name', e.target.value)}
+                                            className="w-full font-semibold text-lg p-1 border rounded"
+                                        />
+                                        <textarea
+                                            defaultValue={docItem.description}
+                                            onBlur={(e) => handleUpdateDoc(docItem.id, 'description', e.target.value)}
+                                            placeholder="Leírás..."
+                                            rows={2}
+                                            className="w-full text-sm p-1 border rounded"
+                                        />
                                     </div>
-                                ))}
+                                ) : (
+                                    <>
+                                        <h3 className="font-semibold text-lg text-gray-800">{docItem.name}</h3>
+                                        {docItem.description && <p className="text-sm text-gray-600 mt-1">{docItem.description}</p>}
+                                    </>
+                                )}
+                                <p className="text-xs text-gray-400 mt-2">
+                                    Feltöltötte: {docItem.uploadedBy} - {docItem.uploadedAt?.toDate().toLocaleDateString('hu-HU')} ({formatBytes(docItem.size)})
+                                </p>
+                            </div>
+                             <div className="flex items-center gap-2 flex-shrink-0">
+                                <a href={docItem.url} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-100 rounded-full" title="Megnyitás/Letöltés">
+                                    <DownloadIcon className="h-5 w-5" />
+                                </a>
+                                {isEditMode && canManage && (
+                                    <button onClick={() => handleDelete(docItem)} className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-100 rounded-full" title="Törlés">
+                                        <TrashIcon className="h-5 w-5" />
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ))}
-                </div>
+                 </div>
             )}
         </div>
     );

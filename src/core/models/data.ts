@@ -217,6 +217,7 @@ export interface Invitation {
 export interface FileMetadata {
   id: string;
   name: string;
+  description?: string;
   url: string;
   storagePath: string;
   size: number;
@@ -225,6 +226,7 @@ export interface FileMetadata {
   uploadedByUid: string;
   uploadedAt: Timestamp;
   unitId: string; // 'central' for shared documents
+  sortOrder?: number;
 }
 
 export interface Unit {
