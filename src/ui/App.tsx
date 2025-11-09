@@ -3,12 +3,12 @@ import Login from './components/Login';
 import Register from './components/Register';
 import Dashboard from './components/Dashboard';
 import ReservationPage from './components/public/ReservationPage';
-import ManageReservationPage from './components/public/ManageReservationPage'; // Új import
+import ManageReservationPage from './components/public/ManageReservationPage';
 import { User, Request, Booking, Shift, Todo, Unit, RolePermissions, Permissions, demoUser, demoUnit, demoData, TimeEntry, Feedback, Poll } from '../core/models/data';
 import { auth, db } from '../core/firebase/config';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { collection, collectionGroup, doc, getDoc, getDocs, limit, onSnapshot, query, setDoc, where, orderBy } from 'firebase/firestore';
-import LoadingSpinner from '../../components/LoadingSpinner';
+import LoadingSpinner from './components/LoadingSpinner';
 import { UnitProvider } from './context/UnitContext';
 
 type AppState = 'login' | 'register' | 'dashboard' | 'loading' | 'public';

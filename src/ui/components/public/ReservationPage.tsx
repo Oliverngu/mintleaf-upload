@@ -8,6 +8,7 @@ import CalendarIcon from '../../../../components/icons/CalendarIcon';
 import CopyIcon from '../../../../components/icons/CopyIcon'; // Új import
 import { translations } from '../../../lib/i18n'; // Import a kiszervezett fájlból
 import { sendEmail, createGuestReservationConfirmationEmail, createUnitNewReservationNotificationEmail } from '../../../core/api/emailService';
+import { logReservationEvent } from '../../../core/services/loggingService';
 
 type Locale = 'hu' | 'en';
 
@@ -277,6 +278,13 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ unitId, allUnits, cur
             };
             await setDoc(newReservationRef, newReservation);
 
+            // Log the event
+            await logReservationEvent({
+                type: 'created',
+                booking: newReservation as any, // Cast because of Timestamp vs ServerTimestamp
+                user: null, // This is a guest action
+            });
+
             // Send emails
             if(newReservation.contact.email) {
                 const emailConfirmationParams = createGuestReservationConfirmationEmail(newReservation, unit);
@@ -294,7 +302,7 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ unitId, allUnits, cur
             setStep(3);
         } catch (err: unknown) {
             console.error("Error during reservation submission:", err);
-            // FIX: Safely handle unknown error type in catch block by checking its type before setting the error state.
+            // FIX: Safely handle 'unknown' error type before passing to setError.
             if (err instanceof Error) {
                 setError(err.message);
             } else if (typeof err === "string") {

@@ -5,6 +5,7 @@ import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import LoadingSpinner from '../../../../components/LoadingSpinner';
 import { translations } from '../../../lib/i18n';
 import CalendarIcon from '../../../../components/icons/CalendarIcon';
+import { logReservationEvent } from '../../../core/services/loggingService';
 
 type Locale = 'hu' | 'en';
 
@@ -55,7 +56,7 @@ const ManageReservationPage: React.FC<ManageReservationPageProps> = ({ token, al
                         setLocale(foundBooking.locale || 'hu');
                     }
                 }
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error("Error fetching reservation:", err);
                 setError('Hiba a foglalás betöltésekor. Ellenőrizze a linket, vagy próbálja meg később.');
             } finally {
@@ -80,6 +81,15 @@ const ManageReservationPage: React.FC<ManageReservationPageProps> = ({ token, al
                 status: 'cancelled',
                 cancelledAt: serverTimestamp(),
             });
+            
+            // Log the cancellation event
+            await logReservationEvent({
+                type: 'cancelled',
+                booking: { ...booking, status: 'cancelled' },
+                user: null, // Guest action
+                details: `Foglalás lemondva (vendég által): ${booking.name}`,
+            });
+
             setBooking(prev => prev ? ({ ...prev, status: 'cancelled' }) : null);
             setIsCancelModalOpen(false);
         } catch(err) {

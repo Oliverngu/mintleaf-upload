@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Booking, User, Unit } from '../../../core/models/data';
 import { db, Timestamp, serverTimestamp } from '../../../core/firebase/config';
-import { collection, query, where, orderBy, onSnapshot, addDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, addDoc, doc, updateDoc, setDoc } from 'firebase/firestore';
 import BookingIcon from '../../../../components/icons/BookingIcon';
 import LoadingSpinner from '../../../../components/LoadingSpinner';
 import AddBookingModal from './AddBookingModal';
@@ -9,6 +9,10 @@ import PlusIcon from '../../../../components/icons/PlusIcon';
 import SettingsIcon from '../../../../components/icons/SettingsIcon';
 import ReservationSettingsModal from './ReservationSettingsModal';
 import TrashIcon from '../../../../components/icons/TrashIcon';
+import { logReservationEvent } from '../../../core/services/loggingService';
+import ReservationLogs from './ReservationLogs';
+import ArrowDownIcon from '../../../../components/icons/ArrowDownIcon';
+
 
 interface FoglalasokAppProps {
   currentUser: User;
@@ -118,6 +122,7 @@ const FoglalasokApp: React.FC<FoglalasokAppProps> = ({ currentUser, canAddBookin
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null);
+  const [showLogs, setShowLogs] = useState(false);
 
   const activeUnitId = activeUnitIds.length === 1 ? activeUnitIds[0] : null;
   const isAdmin = currentUser.role === 'Admin' || currentUser.role === 'Unit Admin';
@@ -186,7 +191,14 @@ const FoglalasokApp: React.FC<FoglalasokAppProps> = ({ currentUser, canAddBookin
   }
   
   const handleAddBooking = async (bookingData: Omit<Booking, 'id'>) => {
-    await addDoc(collection(db, 'units', activeUnitId, 'reservations'), bookingData);
+    const docRef = await addDoc(collection(db, 'units', activeUnitId, 'reservations'), bookingData);
+
+    await logReservationEvent({
+      type: 'created',
+      booking: { id: docRef.id, ...bookingData } as Booking,
+      user: currentUser,
+    });
+    
     setIsAddModalOpen(false);
   };
 
@@ -198,6 +210,14 @@ const FoglalasokApp: React.FC<FoglalasokAppProps> = ({ currentUser, canAddBookin
             cancelledAt: serverTimestamp(),
             cancelReason: reason || '',
         });
+
+        await logReservationEvent({
+            type: 'cancelled',
+            booking: bookingToDelete,
+            user: currentUser,
+            details: `Foglalás lemondva: ${bookingToDelete.name}. Indok: ${reason || 'Nincs megadva'}`,
+        });
+
         setBookingToDelete(null);
     } catch (err) {
         console.error("Error deleting booking:", err);
@@ -326,6 +346,25 @@ const FoglalasokApp: React.FC<FoglalasokAppProps> = ({ currentUser, canAddBookin
       {error && <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded-r-lg" role="alert"><p className="font-bold">Hiba történt</p><p>{error}</p></div>}
       
       {!loading && !error && renderCalendar()}
+
+      {isAdmin && activeUnitId && (
+          <div className="mt-8">
+              <button
+                  onClick={() => setShowLogs(!showLogs)}
+                  className="w-full flex justify-between items-center text-left p-4 bg-gray-200 rounded-lg hover:bg-gray-300"
+                  aria-expanded={showLogs}
+              >
+                  <h2 className="text-xl font-bold text-gray-800">Foglalási Napló</h2>
+                  <ArrowDownIcon className={`h-6 w-6 text-gray-500 transform transition-transform duration-300 ${showLogs ? 'rotate-180' : ''}`} />
+              </button>
+              {showLogs && (
+                  <div className="mt-0">
+                      <ReservationLogs unitId={activeUnitId} currentUser={currentUser} />
+                  </div>
+              )}
+          </div>
+      )}
+
 
       {selectedDate && (
         <BookingDetailsModal

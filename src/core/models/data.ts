@@ -45,6 +45,9 @@ export interface User {
   dashboardConfig?: WidgetConfig[]; // NEW: Add dashboard configuration to user
   notifications?: {
     newSchedule?: boolean;
+    leaveRequestStatus?: boolean;
+    newPoll?: boolean;
+    newLeaveRequest?: boolean; // For admins
   };
   registrationEmailSent?: boolean;
 }
@@ -92,6 +95,19 @@ export interface Booking {
   referenceCode?: string;
   customData?: Record<string, string>;
 }
+
+export interface ReservationLog {
+    id: string;
+    reservationId: string;
+    unitId: string;
+    type: 'created' | 'updated' | 'deleted' | 'cancelled';
+    source: 'guest' | 'manual';
+    performedByUserId: string | null;
+    performedByName: string; // "Vendég" or user's full name
+    timestamp: Timestamp;
+    details: string; // e.g., "Foglalás létrehozva: John Doe, 4 fő, 18:00"
+}
+
 
 export interface ThemeSettings {
     primary: string;

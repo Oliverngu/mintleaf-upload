@@ -1,6 +1,6 @@
 import { emailProviderConfig } from '../config/emailConfig';
-import { User, Unit } from '../models/data';
-import { registrationTemplate, newScheduleNotificationTemplate } from '../email/templates';
+import { User, Unit, Request, Poll } from '../models/data';
+import { registrationTemplate, newScheduleNotificationTemplate, newLeaveRequestTemplate, leaveRequestStatusTemplate, newPollTemplate } from '../email/templates';
 
 export interface EmailParams {
   to: string | string[];
@@ -18,10 +18,48 @@ export const sendEmail = async (params: EmailParams): Promise<{ success: boolean
     return { success: true, message: 'Mock email sent successfully.' };
   }
 
-  // Future implementation for Resend/SendGrid
-  // const { to, subject, html } = params;
-  // const from = emailProviderConfig.fromDefault || 'noreply@yourdomain.com';
-  // ... API call logic ...
+  if (emailProviderConfig.provider === 'resend') {
+    if (!emailProviderConfig.apiKey) {
+      console.error('Resend API key is missing.');
+      return { success: false, message: 'Resend API key is not configured.' };
+    }
+    if (!emailProviderConfig.fromDefault) {
+        console.error('Default FROM address is missing for Resend.');
+        return { success: false, message: 'Default FROM address is not configured.' };
+    }
+
+    try {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${emailProviderConfig.apiKey}`,
+        },
+        body: JSON.stringify({
+          from: emailProviderConfig.fromDefault,
+          to: params.to,
+          subject: params.subject,
+          html: params.html,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Failed to send email via Resend:', errorData);
+        return { success: false, message: `Resend error: ${errorData.message || 'Unknown error'}` };
+      }
+
+      console.log('Email sent successfully via Resend.');
+      return { success: true, message: 'Email sent successfully via Resend.' };
+
+    } catch (error) {
+      console.error('Network or other error sending email via Resend:', error);
+      if (error instanceof Error) {
+        return { success: false, message: `Failed to send email: ${error.message}` };
+      }
+      return { success: false, message: 'An unknown error occurred while sending the email.' };
+    }
+  }
 
   return { success: false, message: 'Email provider not configured.' };
 };
@@ -45,6 +83,38 @@ export const createNewScheduleNotificationEmail = (user: User, weekLabel: string
     html,
   };
 };
+
+export const createNewLeaveRequestEmail = (admins: User[], request: Request, requestor: User, unit: Unit): EmailParams => {
+    const subject = `Új szabadságkérelem érkezett - ${unit.name}`;
+    const html = newLeaveRequestTemplate(request, requestor, unit);
+    return {
+        to: admins.map(a => a.email),
+        subject,
+        html,
+    };
+};
+
+export const createLeaveRequestStatusEmail = (request: Request, requestor: User, unit: Unit): EmailParams => {
+    const statusText = request.status === 'approved' ? 'elfogadásra' : 'elutasításra';
+    const subject = `Szabadságkérelmed elbírálásra került`;
+    const html = leaveRequestStatusTemplate(request, requestor, unit);
+    return {
+        to: requestor.email,
+        subject,
+        html,
+    };
+};
+
+export const createNewPollEmail = (user: User, poll: Poll, unit: Unit): EmailParams => {
+    const subject = `Új szavazás indult: ${poll.question.substring(0, 50)}...`;
+    const html = newPollTemplate(user, poll, unit);
+    return {
+        to: user.email,
+        subject,
+        html,
+    };
+};
+
 
 export const createGuestReservationConfirmationEmail = (booking: any, unit: Unit): EmailParams | null => {
     if (!booking.contact?.email) return null;

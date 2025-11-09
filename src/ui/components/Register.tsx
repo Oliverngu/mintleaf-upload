@@ -115,6 +115,8 @@ const Register: React.FC<RegisterProps> = ({ inviteCode, onRegisterSuccess }) =>
         registrationEmailSent: true, // Mark as sent immediately
         notifications: {
           newSchedule: true, // Default to on
+          leaveRequestStatus: true,
+          newPoll: true,
         },
       };
       await setDoc(doc(db, 'users', user.uid), userDataForDb);
