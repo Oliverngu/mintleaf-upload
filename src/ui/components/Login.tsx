@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import MintLeafLogo from '../../../components/icons/AppleLogo';
+import MintLeafLogo from './icons/AppleLogo';
 import ArrowIcon from '../../../components/icons/ArrowIcon';
 import EyeIcon from '../../../components/icons/EyeIcon';
 import EyeSlashIcon from '../../../components/icons/EyeSlashIcon';
