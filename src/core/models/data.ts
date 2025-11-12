@@ -333,8 +333,8 @@ export interface EmailConfig {
   fromAddress: string;
   replyTo?: string;
   bcc?: string[];
-  subjectTemplates: Partial<Record<TemplateKey, string>>;
-  bodyTemplates: Partial<Record<TemplateKey, string>>;
+  subjectTemplates?: Partial<Record<TemplateKey, string>>;
+  bodyTemplates?: Partial<Record<TemplateKey, string>>;
   enabled: boolean;
 }
 

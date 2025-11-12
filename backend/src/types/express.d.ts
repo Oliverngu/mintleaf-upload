@@ -2,6 +2,8 @@
 // This avoids TypeScript errors when we attach the authenticated user to the request object.
 
 import { User } from './models'; // Assuming User type is defined elsewhere
+// FIX: Import 'multer' to bring the Multer namespace into scope.
+import * as multer from 'multer';
 
 declare global {
   namespace Express {
@@ -12,7 +14,7 @@ declare global {
         unitIds: string[];
       };
       // FIX: Add the 'file' property to support file uploads with Multer.
-      file?: Multer.File;
+      file?: multer.File;
     }
   }
 }

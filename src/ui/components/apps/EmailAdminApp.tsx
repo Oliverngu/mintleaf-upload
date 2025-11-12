@@ -123,8 +123,8 @@ const TemplateEditor: FC<any> = ({ templateInfo, config, setConfig, writeEnabled
     const { key, label, samplePayload } = templateInfo;
     const [isTestModalOpen, setIsTestModalOpen] = useState(false);
     
-    const subject = config.subjectTemplates[key] || '';
-    const body = config.bodyTemplates[key] || '';
+    const subject = config.subjectTemplates?.[key] || '';
+    const body = config.bodyTemplates?.[key] || '';
 
     const renderedBody = useMemo(() => {
         let rendered = body;
@@ -135,11 +135,16 @@ const TemplateEditor: FC<any> = ({ templateInfo, config, setConfig, writeEnabled
     }, [body, samplePayload]);
 
     const handleUpdate = (type: 'subject' | 'body', value: string) => {
-        setConfig((prev: EmailConfig) => ({
-            ...prev,
-            ...(type === 'subject' ? { subjectTemplates: { ...prev.subjectTemplates, [key]: value } } : {}),
-            ...(type === 'body' ? { bodyTemplates: { ...prev.bodyTemplates, [key]: value } } : {}),
-        }));
+        setConfig((prev: EmailConfig) => {
+            const newConfig = { ...prev };
+            if (type === 'subject') {
+                newConfig.subjectTemplates = { ...(newConfig.subjectTemplates || {}), [key]: value };
+            }
+            if (type === 'body') {
+                newConfig.bodyTemplates = { ...(newConfig.bodyTemplates || {}), [key]: value };
+            }
+            return newConfig;
+        });
     };
     
     return (

@@ -79,17 +79,19 @@ app.get('/email-config/:serviceId', authGuard(['Admin']), async (req, res) => {
         const configDoc = await db.collection('emailConfigs').doc(serviceId).get();
         const writeEnabled = await getFeatureFlag('writeEnabled');
 
-        // Ensure docData is an object, even if the document doesn't exist or .data() returns undefined.
         const docData = configDoc.data() || {};
-
-        // Construct the config object, ensuring required fields have defaults and templates are objects.
+        
         const config = {
             enabled: docData.enabled ?? false,
             fromAddress: docData.fromAddress ?? "",
             replyTo: docData.replyTo || "",
             bcc: docData.bcc || [],
-            subjectTemplates: docData.subjectTemplates || {},
-            bodyTemplates: docData.bodyTemplates || {},
+            subjectTemplates: (docData.subjectTemplates && typeof docData.subjectTemplates === 'object' && docData.subjectTemplates !== null)
+                ? docData.subjectTemplates
+                : {},
+            bodyTemplates: (docData.bodyTemplates && typeof docData.bodyTemplates === 'object' && docData.bodyTemplates !== null)
+                ? docData.bodyTemplates
+                : {},
         };
 
         res.status(200).json({ config, writeEnabled });

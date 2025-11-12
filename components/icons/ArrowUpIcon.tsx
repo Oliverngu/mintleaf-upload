@@ -1,7 +1,7 @@
 import React from 'react';
 
-// FIX: Changed component definition to a standard function to avoid React.FC issues with props.
-const ArrowUpIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
+// FIX: Changed component definition to use React.FC to resolve prop type errors.
+const ArrowUpIcon: React.FC<{ className?: string }> = ({ className = "h-5 w-5" }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     className={className}

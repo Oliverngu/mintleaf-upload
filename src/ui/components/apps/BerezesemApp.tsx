@@ -247,7 +247,6 @@ const EditTimeEntryModal: React.FC<EditTimeEntryModalProps> = ({ entry, onClose,
 };
 
 
-// FIX: Changed from a default export to a named export.
 export const BerezesemApp: React.FC<BerezesemAppProps> = ({ currentUser, schedule, activeUnitIds, timeEntries, allUnits }) => {
     const [wages, setWages] = useState<Record<string, number | ''>>({});
     const [loading, setLoading] = useState(true);
