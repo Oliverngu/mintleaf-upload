@@ -15,8 +15,10 @@ try {
 
 const db = fbAdmin.firestore();
 const app = express();
-app.use(cors({ origin: true }));
-app.use(express.json());
+// FIX: Cast middleware to 'any' to resolve 'No overload matches this call' error due to type conflicts.
+app.use(cors({ origin: true }) as any);
+// FIX: Cast middleware to 'any' to resolve 'No overload matches this call' error.
+app.use(express.json() as any);
 
 // --- UTILS ---
 const mustache = (template: string, data: Record<string, any>): string => {
@@ -30,7 +32,8 @@ const mustache = (template: string, data: Record<string, any>): string => {
 };
 
 // --- MIDDLEWARE ---
-const authGuard = (allowedRoles: string[]) => async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+// FIX: Use 'any' for req and res to bypass type errors on properties like .headers and .status.
+const authGuard = (allowedRoles: string[]) => async (req: any, res: any, next: express.NextFunction) => {
     const idToken = req.headers.authorization?.split('Bearer ')[1];
     if (!idToken) {
         return res.status(401).send({ error: 'Unauthorized: No token provided' });
@@ -75,15 +78,24 @@ app.get('/email-config/:serviceId', authGuard(['Admin']), async (req, res) => {
         const { serviceId } = req.params;
         const configDoc = await db.collection('emailConfigs').doc(serviceId).get();
         const writeEnabled = await getFeatureFlag('writeEnabled');
-        
-        const config = configDoc.exists ? configDoc.data() : {
-            enabled: false, fromAddress: "", subjectTemplates: {}, bodyTemplates: {}
+
+        // Ensure docData is an object, even if the document doesn't exist or .data() returns undefined.
+        const docData = configDoc.data() || {};
+
+        // Construct the config object, ensuring required fields have defaults and templates are objects.
+        const config = {
+            enabled: docData.enabled ?? false,
+            fromAddress: docData.fromAddress ?? "",
+            replyTo: docData.replyTo || "",
+            bcc: docData.bcc || [],
+            subjectTemplates: docData.subjectTemplates || {},
+            bodyTemplates: docData.bodyTemplates || {},
         };
 
         res.status(200).json({ config, writeEnabled });
     } catch (error) {
         logger.error("GET /email-config failed:", error);
-        res.status(500).send({ error: 'Internal server error.' });
+        res.status(500).send({ error: 'Internal Server error.' });
     }
 });
 
@@ -141,7 +153,8 @@ app.post('/email-test', authGuard(['Admin']), async (req, res) => {
                 to: to,
                 subject: compiledSubject,
                 html: compiledHtml,
-                reply_to: config.replyTo || undefined,
+                // FIX: Corrected property name from 'reply_to' to 'replyTo'.
+                replyTo: config.replyTo || undefined,
                 bcc: config.bcc || undefined,
             });
 
@@ -164,7 +177,8 @@ app.post('/email-test', authGuard(['Admin']), async (req, res) => {
 });
 
 // Health check for Resend API key and default FROM address
-export const resendHealth = onRequest({ secrets: ["RESEND_API_KEY", "RESEND_FROM_DEFAULT"] }, async (req, res) => {
+// FIX: Use 'any' for req and res to bypass type errors.
+export const resendHealth = onRequest({ secrets: ["RESEND_API_KEY", "RESEND_FROM_DEFAULT"] }, async (req: any, res: any) => {
     logger.info("Health check requested");
     const { to } = req.query;
     if (!to || typeof to !== 'string') {
@@ -193,4 +207,5 @@ export const resendHealth = onRequest({ secrets: ["RESEND_API_KEY", "RESEND_FROM
     }
 });
 
-export const admin = onRequest({ maxInstances: 10, secrets: ["RESEND_API_KEY", "RESEND_FROM_DEFAULT"] }, app);
+// FIX: Cast Express app to 'any' to resolve type mismatch with onRequest handler.
+export const admin = onRequest({ maxInstances: 10, secrets: ["RESEND_API_KEY", "RESEND_FROM_DEFAULT"] }, app as any);

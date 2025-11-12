@@ -9,6 +9,7 @@ import CopyIcon from '../../../../components/icons/CopyIcon'; // Új import
 import { translations } from '../../../lib/i18n'; // Import a kiszervezett fájlból
 import { sendEmail, createGuestReservationConfirmationEmail, createUnitNewReservationNotificationEmail } from '../../../core/api/emailService';
 import { logReservationEvent } from '../../../core/services/loggingService';
+import { errorToString } from '../../../core/utils/errorToString';
 
 type Locale = 'hu' | 'en';
 
@@ -301,15 +302,9 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ unitId, allUnits, cur
             setSubmittedData({ ...newReservation, date: selectedDate });
             setStep(3);
         } catch (err: unknown) {
-            // FIX: Safely handle 'unknown' error type by checking its type before using it as a string.
             console.error("Error during reservation submission:", err);
-            let message = t.genericError || "An unexpected error occurred. Please try again later.";
-            if (err instanceof Error) {
-                message = err.message;
-            } else if (typeof err === "string") {
-                message = err;
-            }
-            setError(message);
+            // FIX: Convert 'unknown' error type to string before setting state.
+            setError(errorToString(err));
         } finally {
             setIsSubmitting(false);
         }

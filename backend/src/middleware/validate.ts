@@ -1,12 +1,15 @@
-import { Request, Response, NextFunction } from 'express';
+import { NextFunction } from 'express';
 import { AnyZodObject, ZodError } from 'zod';
 import { ApiError } from '../utils/errors';
+import { RequestHandler } from 'express';
+
 
 /**
  * Middleware to validate request body, query, or params against a Zod schema.
  * @param schema - The Zod schema to validate against.
  */
-export const validate = (schema: AnyZodObject) => (req: Request, res: Response, next: NextFunction) => {
+// FIX: Return a RequestHandler to ensure correct type inference for req, res, and next.
+export const validate = (schema: AnyZodObject): RequestHandler => (req, res, next) => {
   try {
     schema.parse({
       body: req.body,

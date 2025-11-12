@@ -11,6 +11,8 @@ declare global {
         role: 'Admin' | 'Unit Admin' | 'Unit Leader' | 'User' | 'Guest';
         unitIds: string[];
       };
+      // FIX: Add the 'file' property to support file uploads with Multer.
+      file?: Multer.File;
     }
   }
 }

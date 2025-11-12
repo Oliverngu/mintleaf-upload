@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
 import { ApiError } from '../utils/errors';
 import { User } from '../types/express.d'; // Using our defined user type
@@ -13,7 +13,8 @@ interface JwtPayload {
  * Middleware to verify JWT token and attach user to the request object.
  * This should be used on all protected routes.
  */
-export const protect = (req: Request, res: Response, next: NextFunction) => {
+// FIX: Use RequestHandler type to ensure correct type inference for req, res, and next.
+export const protect: RequestHandler = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -40,8 +41,9 @@ export const protect = (req: Request, res: Response, next: NextFunction) => {
  * @param allowedRoles - An array of roles that are allowed to access the route.
  * @example router.post('/', protect, authorize('Admin', 'Unit Admin'), createShift);
  */
-export const authorize = (...allowedRoles: User['role'][]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+// FIX: Return a RequestHandler to ensure correct type inference.
+export const authorize = (...allowedRoles: User['role'][]): RequestHandler => {
+  return (req, res, next) => {
     if (!req.user || !allowedRoles.includes(req.user.role)) {
       return next(new ApiError(403, 'Forbidden: You do not have permission to perform this action'));
     }

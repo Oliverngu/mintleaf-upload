@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { User, FileMetadata } from '../../../core/models/data';
+import { User, FileMetadata, Unit } from '../../../core/models/data';
 import { db, storage, serverTimestamp, Timestamp } from '../../../core/firebase/config';
 import { collection, onSnapshot, query, orderBy, addDoc, doc, deleteDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -14,9 +14,11 @@ import ArrowDownIcon from '../../../../components/icons/ArrowDownIcon';
 interface TudastarAppProps {
   currentUser: User;
   activeUnitIds: string[];
+  // FIX: Added 'allUnits' to props to satisfy the parent component's call.
+  allUnits: Unit[];
 }
 
-const TudastarApp: React.FC<TudastarAppProps> = ({ currentUser, activeUnitIds }) => {
+const TudastarApp: React.FC<TudastarAppProps> = ({ currentUser, activeUnitIds, allUnits }) => {
     const [documents, setDocuments] = useState<FileMetadata[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isUploading, setIsUploading] = useState(false);

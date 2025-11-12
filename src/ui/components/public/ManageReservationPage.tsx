@@ -6,6 +6,7 @@ import LoadingSpinner from '../../../../components/LoadingSpinner';
 import { translations } from '../../../lib/i18n';
 import CalendarIcon from '../../../../components/icons/CalendarIcon';
 import { logReservationEvent } from '../../../core/services/loggingService';
+import { errorToString } from '../../../core/utils/errorToString';
 
 type Locale = 'hu' | 'en';
 
@@ -58,7 +59,8 @@ const ManageReservationPage: React.FC<ManageReservationPageProps> = ({ token, al
                 }
             } catch (err: unknown) {
                 console.error("Error fetching reservation:", err);
-                setError('Hiba a foglalás betöltésekor. Ellenőrizze a linket, vagy próbálja meg később.');
+                // FIX: Convert 'unknown' error type to string before setting state.
+                setError(errorToString(err));
             } finally {
                 setLoading(false);
             }

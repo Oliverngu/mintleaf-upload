@@ -6,7 +6,9 @@ import LoadingSpinner from '../LoadingSpinner';
 import CalendarIcon from '../icons/CalendarIcon';
 import CopyIcon from '../icons/CopyIcon'; // Új import
 import { translations } from '../../src/lib/i18n'; // Import a kiszervezett fájlból
-import { sendEmail, createGuestReservationConfirmationEmail, createUnitNewReservationNotificationEmail } from '../../core/api/emailService';
+// FIX: Corrected import paths to point to the 'src' directory.
+import { sendEmail, createGuestReservationConfirmationEmail, createUnitNewReservationNotificationEmail } from '../../src/core/api/emailService';
+import { errorToString } from '../../src/core/utils/errorToString';
 
 type Locale = 'hu' | 'en';
 
@@ -291,15 +293,10 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ unitId, allUnits, cur
             setSubmittedData({ ...newReservation, date: selectedDate });
             setStep(3);
         } catch (err: unknown) {
-            // FIX: Safely handle 'unknown' error type by checking its type before using it as a string.
+            // FIX: The caught error 'err' is of type 'unknown' and cannot be directly assigned to a state expecting a string.
+            // Convert it to a string using the utility function before setting the state.
             console.error("Error during reservation submission:", err);
-            let message = t.genericError || "An unexpected error occurred. Please try again later.";
-            if (err instanceof Error) {
-                message = err.message;
-            } else if (typeof err === "string") {
-                message = err;
-            }
-            setError(message);
+            setError(errorToString(err));
         } finally {
             setIsSubmitting(false);
         }

@@ -12,8 +12,8 @@ import AdminTodoApp from './apps/AdminTodoApp';
 import ContactsApp from './apps/ContactsApp';
 import TudastarApp from './apps/TudastarApp';
 import VelemenyekApp from './apps/VelemenyekApp';
-// FIX: Module '"file:///src/ui/components/apps/BerezesemApp"' has no default export.
-import BerezesemApp from './apps/BerezesemApp';
+// FIX: Changed to a named import to match the component's export style.
+import { BerezesemApp } from './apps/BerezesemApp';
 import AdminisztracioApp from './apps/AdminisztracioApp';
 import HomeDashboard from './HomeDashboard';
 import PollsApp from './polls/PollsApp';
@@ -315,6 +315,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         case 'elerhetosegek':
             return <ContactsApp currentUser={currentUser} canManage={hasPermission('canManageContacts')} canViewAll={hasPermission('canViewAllContacts')} />;
         case 'tudastar':
+            // FIX: Pass the 'allUnits' prop to the TudastarApp component.
             return <TudastarApp currentUser={currentUser} activeUnitIds={activeUnitIds} allUnits={allUnits} />;
         case 'velemenyek':
             return <VelemenyekApp currentUser={currentUser} allUnits={allUnits} activeUnitIds={activeUnitIds} feedbackList={feedbackList} />;

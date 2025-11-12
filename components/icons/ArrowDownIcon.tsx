@@ -1,6 +1,7 @@
 import React from 'react';
 
-const ArrowDownIcon: React.FC<{ className?: string }> = ({ className = "h-5 w-5" }) => (
+// FIX: Changed component definition to a standard function to avoid React.FC issues with props.
+const ArrowDownIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     className={className}

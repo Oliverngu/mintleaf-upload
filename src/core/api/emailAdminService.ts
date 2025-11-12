@@ -1,7 +1,28 @@
 import { auth } from '../firebase/config';
 import { EmailConfig, EmailServiceId, TemplateKey } from '../models/data';
 
-const BASE_URL = "https://admin-7n7vr5ep5a-lm.a.run.app";
+const getBaseUrl = (): string => {
+    // This is the stable URL for the gen2 cloud function.
+    // The gcloud command might return a temporary or revision-specific URL.
+    // Using this as a reliable default.
+    const defaultUrl = "https://europe-central2-mintleaf-74d27.cloudfunctions.net/admin";
+
+    // In a local dev environment (like Vite), process.env.VITE_EMAIL_ADMIN_BASE might be available.
+    // In some production/staging environments, a global ENV object might be injected.
+    const envVar = (globalThis as any).ENV?.VITE_EMAIL_ADMIN_BASE || process.env.VITE_EMAIL_ADMIN_BASE;
+
+    if (envVar) {
+        console.log("Using Email Admin Service BASE_URL from ENV:", envVar);
+        return envVar;
+    }
+    
+    return defaultUrl;
+};
+
+const BASE_URL = getBaseUrl();
+// For debugging purposes, it's useful to log the final URL being used.
+console.log("Final Email Admin Service BASE_URL:", BASE_URL);
+
 
 const getAuthToken = async (): Promise<string> => {
     const currentUser = auth.currentUser;
