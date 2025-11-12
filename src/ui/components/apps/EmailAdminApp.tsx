@@ -94,8 +94,13 @@ const ConfigEditor: FC<{ config: EmailConfig; writeEnabled: boolean; serviceId: 
     return (
         <div>
             {!writeEnabled && (
-                <div className="p-3 mb-4 bg-yellow-100 text-yellow-800 rounded-lg font-semibold">
-                    Jelenleg csak olvasási módban vagy. A módosítások mentéséhez adminisztrátornak engedélyeznie kell az írást.
+                <div className="p-4 mb-4 bg-yellow-100 text-yellow-800 rounded-lg">
+                    <p className="font-bold">Figyelem: A szolgáltatás beállításra vár!</p>
+                    <p className="text-sm mt-1">Az email küldés és a beállítások mentése le van tiltva. A funkció használatához a következő lépések szükségesek:</p>
+                    <ol className="list-decimal list-inside text-sm mt-2 space-y-1">
+                        <li>Állítsd be a <strong>RESEND_API_KEY</strong> és <strong>RESEND_FROM_DEFAULT</strong> titkosított változókat a Firebase projektben a <code>README.md</code> útmutatója alapján.</li>
+                        <li>A Firestore adatbázis <code>appFlags/email</code> dokumentumában állítsd a <code>writeEnabled</code> mezőt <code>true</code>-ra.</li>
+                    </ol>
                 </div>
             )}
 

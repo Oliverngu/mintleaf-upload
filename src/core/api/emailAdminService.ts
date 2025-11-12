@@ -65,7 +65,7 @@ export const updateEmailConfig = async (serviceId: EmailServiceId, config: Parti
         body: JSON.stringify(config),
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Failed to update email config.');
+    if (!response.ok) throw new Error(data.error || data.message || 'Failed to update email config.');
     return data;
 };
 
@@ -97,6 +97,6 @@ export const sendTestEmail = async (payload: TestEmailPayload): Promise<TestEmai
         body: JSON.stringify(payload),
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Failed to send test email.');
+    if (!response.ok) throw new Error(data.error || data.message || 'Failed to send test email.');
     return data;
 };
