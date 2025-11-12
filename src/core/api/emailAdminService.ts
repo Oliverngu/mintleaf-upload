@@ -1,25 +1,35 @@
-import { auth, db } from '../firebase/config';
+import { auth } from '../firebase/config';
 import { EmailConfig, EmailServiceId, TemplateKey } from '../models/data';
 
-// This is the trigger URL for the `admin` function.
-// Dynamically construct the URL based on the Firebase project config.
-// const projectConfig = (db.app.options as any);
-// const BASE_URL = `https://${projectConfig.locationId}-${projectConfig.projectId}.cloudfunctions.net/admin`;
+/**
+ * Determines the correct base URL for the email admin service by checking various environments.
+ * @returns {string} The resolved base URL.
+ */
+function getBaseUrl(): string {
+    // 1. AI Studio (most explicit check based on user feedback)
+    if (typeof globalThis !== 'undefined' && (globalThis as any).ENV?.VITE_EMAIL_ADMIN_BASE) {
+        console.log("Using VITE_EMAIL_ADMIN_BASE from globalThis.ENV object.");
+        return (globalThis as any).ENV.VITE_EMAIL_ADMIN_BASE;
+    }
+    // 2. Vite build environment
+    if (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_EMAIL_ADMIN_BASE) {
+        console.log("Using VITE_EMAIL_ADMIN_BASE from import.meta.env.");
+        return (import.meta as any).env.VITE_EMAIL_ADMIN_BASE;
+    }
+    // 3. Node.js environment
+    if (typeof process !== 'undefined' && process.env?.VITE_EMAIL_ADMIN_BASE) {
+        console.log("Using VITE_EMAIL_ADMIN_BASE from process.env.");
+        return process.env.VITE_EMAIL_ADMIN_BASE;
+    }
+    // 4. Fallback to hardcoded URL
+    console.log("Using hardcoded fallback URL for email admin service.");
+    return "https://europe-central2-mintleaf-74d27.cloudfunctions.net/admin";
+}
 
-declare const ENV: any; // Allow access to AI Studio's global ENV
+const BASE_URL = getBaseUrl();
 
-// Sequentially check for the environment variable in Vite, Node.js, AI Studio, and then use a fallback.
-const base =
-  // FIX: Cast import.meta to any to resolve TypeScript error when accessing 'env'.
-  (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_EMAIL_ADMIN_BASE) ||
-  (typeof process !== 'undefined' && process.env?.VITE_EMAIL_ADMIN_BASE) ||
-  (typeof ENV !== 'undefined' && ENV?.VITE_EMAIL_ADMIN_BASE) ||
-  "https://europe-central2-mintleaf-74d27.cloudfunctions.net/admin";
-
-// Temporary log to test if the value is being read correctly in AI Studio
-console.log("EMAIL ADMIN BASE:", base);
-
-const BASE_URL = base;
+// Temporary log to test the final resolved value in AI Studio
+console.log("Final Email Admin Service BASE_URL:", BASE_URL);
 
 
 const getAuthToken = async (): Promise<string> => {
@@ -36,11 +46,17 @@ interface GetConfigResponse {
 export const getEmailConfig = async (serviceId: EmailServiceId): Promise<GetConfigResponse> => {
     const token = await getAuthToken();
     const response = await fetch(`${BASE_URL}/email-config/${serviceId}`, {
+        mode: 'cors',
         headers: { 'Authorization': `Bearer ${token}` }
     });
     if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch email config.');
+        try {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to fetch email config.');
+        } catch (jsonError) {
+            // If the error response itself is not JSON (e.g., HTML error page)
+            throw new Error(`Failed to fetch email config. Status: ${response.status}. The server did not return a valid JSON error.`);
+        }
     }
     return response.json();
 };
@@ -49,6 +65,7 @@ export const updateEmailConfig = async (serviceId: EmailServiceId, config: Parti
     const token = await getAuthToken();
     const response = await fetch(`${BASE_URL}/email-config/${serviceId}`, {
         method: 'PUT',
+        mode: 'cors',
         headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -80,6 +97,7 @@ export const sendTestEmail = async (payload: TestEmailPayload): Promise<TestEmai
     const token = await getAuthToken();
     const response = await fetch(`${BASE_URL}/email-test`, {
         method: 'POST',
+        mode: 'cors',
         headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',

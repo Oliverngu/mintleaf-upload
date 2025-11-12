@@ -291,8 +291,8 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ unitId, allUnits, cur
             setSubmittedData({ ...newReservation, date: selectedDate });
             setStep(3);
         } catch (err: unknown) {
-            console.error("Error during reservation submission:", err);
             // FIX: Safely handle 'unknown' error type by checking its type before using it as a string.
+            console.error("Error during reservation submission:", err);
             let message = t.genericError || "An unexpected error occurred. Please try again later.";
             if (err instanceof Error) {
                 message = err.message;
