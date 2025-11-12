@@ -8,7 +8,7 @@ interface EmailProviderConfig {
 export const emailProviderConfig: EmailProviderConfig = {
   provider: "resend",
   apiKey: process.env.RESEND_API_KEY,
-  fromDefault: "noreply@mintleaf.app",
+  fromDefault: "noreply@mintleaf.hu",
   // In the future, this could be:
   // apiKey: process.env.RESEND_API_KEY,
 };

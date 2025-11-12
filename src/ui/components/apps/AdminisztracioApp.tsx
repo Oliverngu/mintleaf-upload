@@ -10,6 +10,7 @@ import EgysegekApp from './EgysegekApp';
 import PoziciokApp from './PoziciokApp';
 import JogosultsagokApp from './JogosultsagokApp';
 import NotificationSettings from './NotificationSettings';
+import EmailAdminApp from './EmailAdminApp';
 
 
 import UsersIcon from '../../../../components/icons/UsersIcon';
@@ -20,6 +21,7 @@ import ShieldIcon from '../../../../components/icons/ShieldIcon';
 import SettingsIcon from '../../../../components/icons/SettingsIcon';
 import CalendarOffIcon from '../../../../components/icons/CalendarOffIcon';
 import BellIcon from '../icons/BellIcon';
+import EmailIcon from '../icons/EmailIcon';
 
 interface AdminisztracioAppProps {
     currentUser: User;
@@ -30,7 +32,7 @@ interface AdminisztracioAppProps {
     canGenerateInvites: boolean;
 }
 
-type AdminTab = 'felhasznalok' | 'meghivok' | 'uzletek' | 'poziciok' | 'jogosultsagok' | 'alkalmazasok' | 'notifications';
+type AdminTab = 'felhasznalok' | 'meghivok' | 'uzletek' | 'poziciok' | 'jogosultsagok' | 'alkalmazasok' | 'notifications' | 'email';
 
 const TABS: { id: AdminTab; label: string; icon: React.FC<{className?: string}>; roles: User['role'][] }[] = [
     { id: 'felhasznalok', label: 'Felhasználók', icon: UsersIcon, roles: ['Admin', 'Unit Admin'] },
@@ -40,6 +42,7 @@ const TABS: { id: AdminTab; label: string; icon: React.FC<{className?: string}>;
     { id: 'jogosultsagok', label: 'Jogosultságok', icon: ShieldIcon, roles: ['Admin', 'Unit Admin'] },
     { id: 'alkalmazasok', label: 'Alkalmazások', icon: SettingsIcon, roles: ['Unit Admin'] },
     { id: 'notifications', label: 'Értesítések', icon: BellIcon, roles: ['Admin'] },
+    { id: 'email', label: 'Email Beállítások', icon: EmailIcon, roles: ['Admin'] },
 ];
 
 const APPS_TO_MANAGE = [
@@ -135,6 +138,8 @@ const AdminisztracioApp: React.FC<AdminisztracioAppProps> = (props) => {
                 return <AppManager unitId={activeUnitId!} disabledApps={unitPermissions[activeUnitId!]?.disabledApps || []} allUnits={allUnits} />;
             case 'notifications':
                 return <NotificationSettings currentUser={currentUser} />;
+            case 'email':
+                return <EmailAdminApp currentUser={currentUser} />;
             default:
                 return null;
         }

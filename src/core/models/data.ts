@@ -324,6 +324,33 @@ export interface PollVote {
   votedAt: Timestamp;
 }
 
+// --- EMAIL ADMIN MODULE INTERFACES ---
+export type EmailServiceId = 'system' | 'bookings' | 'leaves' | 'polls';
+export type TemplateKey = 'registration' | 'newSchedule' | 'leaveRequest' | 'leaveStatus' | 'poll' | 'guestConfirmation' | 'newBookingAdminNotification';
+
+export interface EmailConfig {
+  id: EmailServiceId;
+  fromAddress: string;
+  replyTo?: string;
+  bcc?: string[];
+  subjectTemplates: Partial<Record<TemplateKey, string>>;
+  bodyTemplates: Partial<Record<TemplateKey, string>>;
+  enabled: boolean;
+}
+
+export interface EmailAudit {
+  id: string;
+  timestamp: Timestamp;
+  userId: string; // UID of admin who made the change
+  serviceId: EmailServiceId;
+  details: string; // e.g., "Updated subject for 'registration'"
+  diff: {
+    before: Partial<EmailConfig>;
+    after: Partial<EmailConfig>;
+  };
+}
+
+
 // --- DEMO MODE DATA ---
 export const demoUnit: Unit = { id: 'demo-unit-id', name: 'DEMO Üzlet', logoUrl: 'https://firebasestorage.googleapis.com/v0/b/mintleaf-74d27.appspot.com/o/unit_logos%2Fdemo-unit-id%2Flogo_demo.png?alt=media&token=1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p' };
 export const demoUser: User = {

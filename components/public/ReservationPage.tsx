@@ -292,14 +292,14 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ unitId, allUnits, cur
             setStep(3);
         } catch (err: unknown) {
             console.error("Error during reservation submission:", err);
-            // FIX: Safely handle 'unknown' error type before passing to setError to avoid TypeScript error.
+            // FIX: Safely handle 'unknown' error type by checking its type before using it as a string.
+            let message = t.genericError || "An unexpected error occurred. Please try again later.";
             if (err instanceof Error) {
-                setError(err.message);
+                message = err.message;
             } else if (typeof err === "string") {
-                setError(err);
-            } else {
-                setError(t.genericError);
+                message = err;
             }
+            setError(message);
         } finally {
             setIsSubmitting(false);
         }
@@ -500,6 +500,7 @@ const Step2Details: React.FC<any> = ({ selectedDate, formData, setFormData, onBa
     )
 }
 
+// FIX: Define missing Step3Confirmation component
 const Step3Confirmation: React.FC<{ onReset: () => void, themeProps: any, t: any, submittedData: any, unit: Unit, locale: Locale, settings: ReservationSetting }> = ({ onReset, themeProps, t, submittedData, unit, locale, settings }) => {
     const [copied, setCopied] = useState(false);
     
