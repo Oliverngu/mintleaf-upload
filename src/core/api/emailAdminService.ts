@@ -1,36 +1,7 @@
 import { auth } from '../firebase/config';
 import { EmailConfig, EmailServiceId, TemplateKey } from '../models/data';
 
-/**
- * Determines the correct base URL for the email admin service by checking various environments.
- * @returns {string} The resolved base URL.
- */
-function getBaseUrl(): string {
-    // 1. AI Studio (most explicit check based on user feedback)
-    if (typeof globalThis !== 'undefined' && (globalThis as any).ENV?.VITE_EMAIL_ADMIN_BASE) {
-        console.log("Using VITE_EMAIL_ADMIN_BASE from globalThis.ENV object.");
-        return (globalThis as any).ENV.VITE_EMAIL_ADMIN_BASE;
-    }
-    // 2. Vite build environment
-    if (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_EMAIL_ADMIN_BASE) {
-        console.log("Using VITE_EMAIL_ADMIN_BASE from import.meta.env.");
-        return (import.meta as any).env.VITE_EMAIL_ADMIN_BASE;
-    }
-    // 3. Node.js environment
-    if (typeof process !== 'undefined' && process.env?.VITE_EMAIL_ADMIN_BASE) {
-        console.log("Using VITE_EMAIL_ADMIN_BASE from process.env.");
-        return process.env.VITE_EMAIL_ADMIN_BASE;
-    }
-    // 4. Fallback to hardcoded URL
-    console.log("Using hardcoded fallback URL for email admin service.");
-    return "https://europe-central2-mintleaf-74d27.cloudfunctions.net/admin";
-}
-
-const BASE_URL = getBaseUrl();
-
-// Temporary log to test the final resolved value in AI Studio
-console.log("Final Email Admin Service BASE_URL:", BASE_URL);
-
+const BASE_URL = "https://admin-7n7vr5ep5a-lm.a.run.app";
 
 const getAuthToken = async (): Promise<string> => {
     const currentUser = auth.currentUser;
