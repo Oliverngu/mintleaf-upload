@@ -1,26 +1,33 @@
 import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
-// FIX: Aliased 'firebase-admin' to 'fbAdmin' to avoid naming conflict with the exported 'admin' function at the end of the file.
 import * as fbAdmin from "firebase-admin";
-import * as express from "express";
-import * as cors from "cors";
+import express, { Request as ExpressRequest, Response, NextFunction } from "express";
+import cors from "cors";
 import { Resend } from 'resend';
+
+// Custom Request interface to include the user property
+type Request = ExpressRequest & {
+  user?: {
+    id: string;
+    role: string;
+    unitIds: string[];
+  };
+};
 
 // Initialization
 try {
-    fbAdmin.initializeApp();
+  fbAdmin.initializeApp();
 } catch (e) {
-    logger.info("Firebase app already initialized.");
+  // Firebase app already initialized
 }
-
 const db = fbAdmin.firestore();
 const app = express();
-// FIX: Cast middleware to 'any' to resolve 'No overload matches this call' error due to type conflicts.
-app.use(cors({ origin: true }) as any);
-// FIX: Cast middleware to 'any' to resolve 'No overload matches this call' error.
-app.use(express.json() as any);
 
-// --- UTILS ---
+// --- Core Middleware ---
+app.use(cors({ origin: true }));
+app.use(express.json());
+
+// --- Utils ---
 const mustache = (template: string, data: Record<string, any>): string => {
   if (!template) return "";
   let rendered = template;
@@ -31,11 +38,11 @@ const mustache = (template: string, data: Record<string, any>): string => {
   return rendered;
 };
 
-// --- MIDDLEWARE ---
-// FIX: Use 'any' for req and res to bypass type errors on properties like .headers and .status.
-const authGuard = (allowedRoles: string[]) => async (req: any, res: any, next: express.NextFunction) => {
+// --- Auth Middleware ---
+const authGuard = (allowedRoles: string[]) => async (req: Request, res: Response, next: NextFunction) => {
     const idToken = req.headers.authorization?.split('Bearer ')[1];
     if (!idToken) {
+        logger.warn('Auth guard failed: No token provided.');
         return res.status(401).send({ error: 'Unauthorized: No token provided' });
     }
     try {
@@ -44,12 +51,18 @@ const authGuard = (allowedRoles: string[]) => async (req: any, res: any, next: e
         const userRole = userDoc.exists ? userDoc.data()?.role : '';
         
         if (!userRole || !allowedRoles.includes(userRole)) {
+            logger.warn(`Auth guard failed: User ${decodedToken.uid} with role '${userRole}' is not in allowed roles [${allowedRoles.join(', ')}].`);
             return res.status(403).send({ error: 'Forbidden: Insufficient permissions' });
         }
-        (req as any).user = { ...decodedToken, role: userRole };
+        
+        req.user = { 
+            id: decodedToken.uid,
+            role: userRole,
+            unitIds: userDoc.data()?.unitIds || [],
+        };
         next();
     } catch (error) {
-        logger.error("Token verification failed:", error);
+        logger.error("Auth guard failed: Token verification error.", error);
         return res.status(401).send({ error: 'Unauthorized: Invalid token' });
     }
 };
@@ -69,47 +82,51 @@ const logAudit = (userId: string, serviceId: string, details: string, diff: any)
     }).catch(err => logger.error("Failed to write audit log:", err));
 };
 
+// --- Routes ---
+const router = express.Router();
 
-// --- ROUTES ---
+router.get("/", (req: Request, res: Response) => {
+    logger.info("Health check request received at router root.");
+    res.status(200).send("Admin function is alive!");
+});
 
-// GET /email-config/:serviceId
-app.get('/email-config/:serviceId', authGuard(['Admin']), async (req, res) => {
+router.get('/email-config/:serviceId', authGuard(['Admin']), async (req: Request, res: Response) => {
     try {
         const { serviceId } = req.params;
         const configDoc = await db.collection('emailConfigs').doc(serviceId).get();
         const writeEnabled = await getFeatureFlag('writeEnabled');
-
-        const docData = configDoc.data() || {};
         
+        if (!configDoc.exists) {
+            return res.status(404).json({ error: 'Config not found' });
+        }
+        
+        const docData = configDoc.data() || {};
         const config = {
+            id: configDoc.id,
             enabled: docData.enabled ?? false,
             fromAddress: docData.fromAddress ?? "",
             replyTo: docData.replyTo || "",
             bcc: docData.bcc || [],
-            subjectTemplates: (docData.subjectTemplates && typeof docData.subjectTemplates === 'object' && docData.subjectTemplates !== null)
-                ? docData.subjectTemplates
-                : {},
-            bodyTemplates: (docData.bodyTemplates && typeof docData.bodyTemplates === 'object' && docData.bodyTemplates !== null)
-                ? docData.bodyTemplates
-                : {},
+            subjectTemplates: docData.subjectTemplates || {},
+            bodyTemplates: docData.bodyTemplates || {},
         };
 
         res.status(200).json({ config, writeEnabled });
     } catch (error) {
-        logger.error("GET /email-config failed:", error);
-        res.status(500).send({ error: 'Internal Server error.' });
+        logger.error(`GET /email-config/${req.params.serviceId} failed:`, error);
+        res.status(500).send({ error: 'Internal Server Error.' });
     }
 });
 
-// PUT /email-config/:serviceId
-app.put('/email-config/:serviceId', authGuard(['Admin']), async (req, res) => {
+router.put('/email-config/:serviceId', authGuard(['Admin']), async (req: Request, res: Response) => {
+    if (!req.user) return res.status(401).send({ message: 'Authentication error.' });
+    
+    const writeEnabled = await getFeatureFlag('writeEnabled');
+    if (!writeEnabled) {
+        return res.status(403).send({ message: 'Forbidden: Write operations are disabled.' });
+    }
+    
     try {
-        const user = (req as any).user;
-        const writeEnabled = await getFeatureFlag('writeEnabled');
-        if (!writeEnabled) {
-            return res.status(403).send({ message: 'Forbidden: Write operations are disabled by feature flag.' });
-        }
-        
         const { serviceId } = req.params;
         const newConfig = req.body;
         
@@ -119,19 +136,19 @@ app.put('/email-config/:serviceId', authGuard(['Admin']), async (req, res) => {
 
         await configRef.set(newConfig, { merge: true });
 
-        logAudit(user.uid, serviceId, `Updated configuration for ${serviceId}`, { before: oldConfig, after: newConfig });
+        logAudit(req.user.id, serviceId, `Updated configuration for ${serviceId}`, { before: oldConfig, after: newConfig });
         
         res.status(200).json({ message: 'Configuration updated successfully.' });
     } catch (error) {
-        logger.error("PUT /email-config failed:", error);
+        logger.error(`PUT /email-config/${req.params.serviceId} failed:`, error);
         res.status(500).send({ message: 'Internal server error.' });
     }
 });
 
-// POST /email-test
-app.post('/email-test', authGuard(['Admin']), async (req, res) => {
+router.post('/email-test', authGuard(['Admin']), async (req: Request, res: Response) => {
     try {
         const { serviceId, templateKey, to, samplePayload } = req.body;
+        logger.info(`Processing /email-test for service: ${serviceId}, template: ${templateKey}`);
 
         const configDoc = await db.collection('emailConfigs').doc(serviceId).get();
         if (!configDoc.exists) {
@@ -139,23 +156,22 @@ app.post('/email-test', authGuard(['Admin']), async (req, res) => {
         }
         const config = configDoc.data()!;
 
-        const subjectTemplate = config.subjectTemplates[templateKey] || '';
-        const bodyTemplate = config.bodyTemplates[templateKey] || '';
+        const subjectTemplate = config.subjectTemplates?.[templateKey] || '';
+        const bodyTemplate = config.bodyTemplates?.[templateKey] || '';
 
         const compiledSubject = mustache(subjectTemplate, samplePayload);
         const compiledHtml = mustache(bodyTemplate, samplePayload);
         
         const writeEnabled = await getFeatureFlag('writeEnabled');
         const isDryRun = !writeEnabled;
-
+        
         if (!isDryRun) {
             const resend = new Resend(process.env.RESEND_API_KEY);
             const { data, error } = await resend.emails.send({
-                from: config.fromAddress || process.env.RESEND_FROM_DEFAULT,
+                from: config.fromAddress || process.env.RESEND_FROM_DEFAULT!,
                 to: to,
                 subject: compiledSubject,
                 html: compiledHtml,
-                // FIX: Corrected property name from 'reply_to' to 'replyTo'.
                 replyTo: config.replyTo || undefined,
                 bcc: config.bcc || undefined,
             });
@@ -164,6 +180,7 @@ app.post('/email-test', authGuard(['Admin']), async (req, res) => {
                 logger.error("Resend API error:", error);
                 return res.status(500).json({ message: 'Failed to send test email.', error: error.message });
             }
+             logger.info("Resend API success:", data);
         }
         
         res.status(200).json({
@@ -178,36 +195,34 @@ app.post('/email-test', authGuard(['Admin']), async (req, res) => {
     }
 });
 
-// Health check for Resend API key and default FROM address
-// FIX: Use 'any' for req and res to bypass type errors.
-export const resendHealth = onRequest({ secrets: ["RESEND_API_KEY", "RESEND_FROM_DEFAULT"] }, async (req: any, res: any) => {
-    logger.info("Health check requested");
+// The Cloud Function URL is .../admin, so we mount the router at the root of the Express app.
+app.use('/', router);
+
+
+// Main function export
+export const admin = onRequest({ maxInstances: 10, secrets: ["RESEND_API_KEY", "RESEND_FROM_DEFAULT"] }, app);
+
+// Separate health check function (can be removed if not needed, but good for simple verification)
+export const resendHealth = onRequest({ secrets: ["RESEND_API_KEY", "RESEND_FROM_DEFAULT"] }, async (req, res) => {
     const { to } = req.query;
     if (!to || typeof to !== 'string') {
-        res.status(400).send("Please provide a 'to' query parameter, e.g., ?to=test@example.com");
+        res.status(400).send("Provide a 'to' query parameter.");
         return;
     }
-
     try {
         const resend = new Resend(process.env.RESEND_API_KEY);
         const { data, error } = await resend.emails.send({
             from: process.env.RESEND_FROM_DEFAULT!,
             to: to,
             subject: 'MintLeaf Health Check',
-            html: '<strong>This is a test email from the MintLeaf backend.</strong>',
+            html: '<strong>This is a test email.</strong>',
         });
-
         if (error) {
-            logger.error("Resend health check failed:", error);
             res.status(500).json(error);
         } else {
             res.status(200).json(data);
         }
     } catch (e) {
-        logger.error("Exception during health check:", e);
         res.status(500).send("An unexpected error occurred.");
     }
 });
-
-// FIX: Cast Express app to 'any' to resolve type mismatch with onRequest handler.
-export const admin = onRequest({ maxInstances: 10, secrets: ["RESEND_API_KEY", "RESEND_FROM_DEFAULT"] }, app as any);
