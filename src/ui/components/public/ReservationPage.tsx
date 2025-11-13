@@ -99,6 +99,7 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ unitId, allUnits, cur
     }, []);
 
     useEffect(() => {
+        // FIX: Add a guard to ensure allUnits is a valid array before proceeding.
         if (!Array.isArray(allUnits)) return;
         const currentUnit = allUnits.find(u => u.id === unitId);
         if (currentUnit) {

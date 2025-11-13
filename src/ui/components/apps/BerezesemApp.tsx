@@ -618,3 +618,5 @@ export const BerezesemApp: React.FC<BerezesemAppProps> = ({ currentUser, schedul
         </div>
     );
 };
+
+export default BerezesemApp;

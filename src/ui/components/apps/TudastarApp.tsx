@@ -14,7 +14,6 @@ import ArrowDownIcon from '../../../../components/icons/ArrowDownIcon';
 interface TudastarAppProps {
   currentUser: User;
   activeUnitIds: string[];
-  // FIX: Added 'allUnits' to props to satisfy the parent component's call.
   allUnits: Unit[];
 }
 

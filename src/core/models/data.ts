@@ -1,4 +1,4 @@
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '../firebase/config';
 
 // NEW: Define the structure for a single widget's configuration
 export interface WidgetConfig {

@@ -315,7 +315,6 @@ const Dashboard: React.FC<DashboardProps> = ({
         case 'elerhetosegek':
             return <ContactsApp currentUser={currentUser} canManage={hasPermission('canManageContacts')} canViewAll={hasPermission('canViewAllContacts')} />;
         case 'tudastar':
-            // FIX: Pass the 'allUnits' prop to the TudastarApp component.
             return <TudastarApp currentUser={currentUser} activeUnitIds={activeUnitIds} allUnits={allUnits} />;
         case 'velemenyek':
             return <VelemenyekApp currentUser={currentUser} allUnits={allUnits} activeUnitIds={activeUnitIds} feedbackList={feedbackList} />;

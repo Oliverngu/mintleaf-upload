@@ -3,6 +3,16 @@ import { getAuth } from "firebase/auth";
 import { getFirestore, Timestamp, serverTimestamp } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
+// FIX: Monkey-patch the Firebase Timestamp object to make it serializable.
+// JSON.stringify will automatically call this toJSON method when it encounters a Timestamp.
+// This prevents "Converting circular structure to JSON" errors that can occur with
+// complex objects in state. This is the most reliable central place to apply the patch.
+if (!(Timestamp.prototype as any).toJSON) {
+  (Timestamp.prototype as any).toJSON = function() {
+    return this.toDate().toISOString();
+  };
+}
+
 const firebaseConfig = {
   apiKey: "AIzaSyCB7ZTAhDlRwueGW6jqDdMqmpfHOI62mtE",
   authDomain: "mintleaf-74d27.firebaseapp.com",

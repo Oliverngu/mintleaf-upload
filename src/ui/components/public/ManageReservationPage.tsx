@@ -25,6 +25,7 @@ const ManageReservationPage: React.FC<ManageReservationPageProps> = ({ token, al
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
     useEffect(() => {
+        // FIX: Add guard to ensure allUnits is a valid array before proceeding.
         if (!Array.isArray(allUnits)) {
             return;
         }

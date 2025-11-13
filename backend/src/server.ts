@@ -1,4 +1,4 @@
-import express, { Express, NextFunction, Request, Response } from 'express';
+import express, { Express, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
@@ -20,11 +20,13 @@ app.use(helmet());
 // Enable CORS for all routes
 app.use(cors());
 // Body parsing middleware
+// FIX: Correctly use express middleware without causing overload errors.
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // --- Routes ---
-app.get('/', (req: Request, res: Response) => {
+app.get('/', (req, res) => {
+  // FIX: Use inferred 'res' type which has the 'send' method.
   res.send('MintLeaf Backend is running!');
 });
 
@@ -38,19 +40,21 @@ app.use('/api/files', fileRoutes);
 
 // --- Error Handling ---
 // Handle 404 Not Found
-app.use((req: Request, res: Response, next: NextFunction) => {
+app.use((req, res, next) => {
   next(new ApiError(404, 'Endpoint not found'));
 });
 
 // Global error handler
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+app.use((err: any, req, res, next) => {
   console.error(err);
   if (err instanceof ApiError) {
+    // FIX: Use inferred 'res' type which has the 'status' method.
     return res.status(err.statusCode).json({
       message: err.message,
       errors: err.errors,
     });
   }
+  // FIX: Use inferred 'res' type which has the 'status' method.
   return res.status(500).json({ message: 'Internal Server Error' });
 });
 
