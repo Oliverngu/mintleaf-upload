@@ -1,4 +1,4 @@
-import express, { NextFunction } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
@@ -26,7 +26,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // --- Routes ---
 // FIX: Use inferred 'res' type which has the 'send' method.
-app.get('/', (req, res) => {
+app.get('/', (req: Request, res: Response) => {
   res.send('MintLeaf Backend is running!');
 });
 
@@ -46,7 +46,7 @@ app.use((req, res, next) => {
 
 // Global error handler
 // FIX: Use inferred 'res' type which has the 'status' method.
-app.use((err: any, req: express.Request, res: express.Response, next: NextFunction) => {
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error(err);
   if (err instanceof ApiError) {
     return res.status(err.statusCode).json({

@@ -2,7 +2,7 @@ import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import * as fbAdmin from "firebase-admin";
 // FIX: Import Request and Response directly from express and remove local redefinition.
-import express, { NextFunction } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { Resend } from 'resend';
 
@@ -32,7 +32,7 @@ const mustache = (template: string, data: Record<string, any>): string => {
 };
 
 // --- Auth Middleware ---
-const authGuard = (allowedRoles: string[]) => async (req: express.Request, res: express.Response, next: NextFunction) => {
+const authGuard = (allowedRoles: string[]) => async (req: Request, res: Response, next: NextFunction) => {
     // FIX: Use correctly typed 'req' which has the 'headers' property.
     const idToken = req.headers.authorization?.split('Bearer ')[1];
     if (!idToken) {
@@ -80,13 +80,13 @@ const logAudit = (userId: string, serviceId: string, details: string, diff: any)
 };
 
 // --- Routes ---
-app.get("/", (req: express.Request, res: express.Response) => {
+app.get("/", (req: Request, res: Response) => {
     logger.info("Health check request received at router root.");
     // FIX: Use correctly typed 'res' which has the 'status' property.
     res.status(200).send("Admin function is alive!");
 });
 
-app.get('/email-config/:serviceId', authGuard(['Admin']), async (req: express.Request, res: express.Response) => {
+app.get('/email-config/:serviceId', authGuard(['Admin']), async (req: Request, res: Response) => {
     try {
         // FIX: Use correctly typed 'req' which has the 'params' property.
         const { serviceId } = req.params;
@@ -117,7 +117,7 @@ app.get('/email-config/:serviceId', authGuard(['Admin']), async (req: express.Re
     }
 });
 
-app.put('/email-config/:serviceId', authGuard(['Admin']), async (req: express.Request, res: express.Response) => {
+app.put('/email-config/:serviceId', authGuard(['Admin']), async (req: Request, res: Response) => {
     if (!(req as any).user) return res.status(401).send({ message: 'Authentication error.' });
     
     const writeEnabled = await getFeatureFlag('writeEnabled');
@@ -148,7 +148,7 @@ app.put('/email-config/:serviceId', authGuard(['Admin']), async (req: express.Re
     }
 });
 
-app.post('/email-test', authGuard(['Admin']), async (req: express.Request, res: express.Response) => {
+app.post('/email-test', authGuard(['Admin']), async (req: Request, res: Response) => {
     try {
         // FIX: Use correctly typed 'req' which has the 'body' property.
         const { serviceId, templateKey, to, samplePayload } = req.body;
