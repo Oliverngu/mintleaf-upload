@@ -1,7 +1,7 @@
 import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import * as fbAdmin from "firebase-admin";
-import express, { Request as ExpressRequest, Response, NextFunction } from "express";
+import express, { Request as ExpressRequest, Response, NextFunction, Router } from "express";
 import cors from "cors";
 import { Resend } from 'resend';
 
@@ -22,6 +22,7 @@ try {
 }
 const db = fbAdmin.firestore();
 const app = express();
+const router = Router();
 
 // --- Core Middleware ---
 app.use(cors({ origin: true }));
@@ -83,12 +84,12 @@ const logAudit = (userId: string, serviceId: string, details: string, diff: any)
 };
 
 // --- Routes ---
-app.get("/", (req: Request, res: Response) => {
+router.get("/", (req: Request, res: Response) => {
     logger.info("Health check request received at router root.");
     res.status(200).send("Admin function is alive!");
 });
 
-app.get('/email-config/:serviceId', authGuard(['Admin']), async (req: Request, res: Response) => {
+router.get('/email-config/:serviceId', authGuard(['Admin']), async (req: Request, res: Response) => {
     try {
         const { serviceId } = req.params;
         const configDoc = await db.collection('emailConfigs').doc(serviceId).get();
@@ -116,7 +117,7 @@ app.get('/email-config/:serviceId', authGuard(['Admin']), async (req: Request, r
     }
 });
 
-app.put('/email-config/:serviceId', authGuard(['Admin']), async (req: Request, res: Response) => {
+router.put('/email-config/:serviceId', authGuard(['Admin']), async (req: Request, res: Response) => {
     if (!req.user) return res.status(401).send({ message: 'Authentication error.' });
     
     const writeEnabled = await getFeatureFlag('writeEnabled');
@@ -143,7 +144,7 @@ app.put('/email-config/:serviceId', authGuard(['Admin']), async (req: Request, r
     }
 });
 
-app.post('/email-test', authGuard(['Admin']), async (req: Request, res: Response) => {
+router.post('/email-test', authGuard(['Admin']), async (req: Request, res: Response) => {
     try {
         const { serviceId, templateKey, to, samplePayload } = req.body;
         logger.info(`Processing /email-test for service: ${serviceId}, template: ${templateKey}`);
@@ -192,6 +193,9 @@ app.post('/email-test', authGuard(['Admin']), async (req: Request, res: Response
         res.status(500).send({ message: 'Internal server error.' });
     }
 });
+
+// Use the router for all routes
+app.use('/', router);
 
 // Main function export
 export const admin = onRequest({ maxInstances: 10, secrets: ["RESEND_API_KEY", "RESEND_FROM_DEFAULT"] }, app);

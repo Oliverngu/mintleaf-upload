@@ -1,11 +1,11 @@
 import { auth } from '../firebase/config';
 import { EmailConfig, EmailServiceId, TemplateKey } from '../models/data';
 
-// Use the environment variable provided by the platform, which ensures the correct URL is always used.
-const BASE_URL = (globalThis as any).ENV?.VITE_EMAIL_ADMIN_BASE;
+// This URL is for the deployed Firebase Cloud Function for the admin backend.
+const BASE_URL = "https://admin-7n7vr5ep5a-lm.a.run.app";
 
 // For debugging purposes, it's useful to log the final URL being used.
-console.log("Using Email Admin Service BASE_URL from environment:", BASE_URL);
+console.log("Using Email Admin Service BASE_URL:", BASE_URL);
 
 
 const getAuthToken = async (): Promise<string> => {
@@ -26,13 +26,15 @@ export const getEmailConfig = async (serviceId: EmailServiceId): Promise<GetConf
         headers: { 'Authorization': `Bearer ${token}` }
     });
     if (!response.ok) {
-        try {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to fetch email config.');
-        } catch (jsonError) {
-            // If the error response itself is not JSON (e.g., HTML error page)
-            throw new Error(`Failed to fetch email config. Status: ${response.status}. The server did not return a valid JSON error.`);
+        let errorMessage = `Failed to fetch email config. Status: ${response.status}.`;
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.error || errorData.message || errorMessage;
+            } catch (e) { /* Ignore JSON parsing error on invalid JSON */ }
         }
+        throw new Error(errorMessage);
     }
     return response.json();
 };
@@ -82,12 +84,15 @@ export const sendTestEmail = async (payload: TestEmailPayload): Promise<TestEmai
     });
     
     if (!response.ok) {
-        let errorMessage = 'Failed to send test email.';
-        try {
-            const errorData = await response.json();
-            errorMessage = errorData.error || errorData.message || errorMessage;
-        } catch (jsonError) {
-            errorMessage = `Server responded with status ${response.status}.`;
+        let errorMessage = `Failed to send test email. Server responded with status ${response.status}.`;
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+             try {
+                const errorData = await response.json();
+                errorMessage = errorData.error || errorData.message || errorMessage;
+            } catch (jsonError) {
+                // The response claimed to be JSON but wasn't, stick with the status message.
+            }
         }
         throw new Error(errorMessage);
     }
