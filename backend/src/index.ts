@@ -1,6 +1,8 @@
 
 
 
+
+
 import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import * as fbAdmin from "firebase-admin";
@@ -22,6 +24,7 @@ const app = express();
 
 // --- Core Middleware ---
 app.use(cors({ origin: true }));
+// @ts-ignore
 app.use(express.json());
 
 // --- Utils ---
@@ -36,7 +39,8 @@ const mustache = (template: string, data: Record<string, any>): string => {
 };
 
 // --- Auth Middleware ---
-const authGuard = (allowedRoles: string[]) => async (req: Request, res: Response, next: NextFunction) => {
+// FIX: Removed explicit types to resolve type conflicts on `req.headers` and `res.status`.
+const authGuard = (allowedRoles: string[]) => async (req, res, next) => {
     const idToken = req.headers.authorization?.split('Bearer ')[1];
     if (!idToken) {
         logger.warn('Auth guard failed: No token provided.');

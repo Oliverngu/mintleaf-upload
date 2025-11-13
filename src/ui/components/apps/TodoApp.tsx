@@ -118,8 +118,8 @@ const TodoApp: React.FC<TodoAppProps> = ({ todos, loading, error, currentUser, a
   }, [filteredTodos, currentUser, loading]);
 
   const { activeTodos, completedTodos } = useMemo(() => {
-    const active = filteredTodos.filter(t => !t.isDone).sort((a,b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
-    const completed = filteredTodos.filter(t => t.isDone).sort((a,b) => (b.completedAt?.toMillis() || 0) - (a.completedAt?.toMillis() || 0));
+    const active = filteredTodos.filter(t => !t.isDone).sort((a,b) => (b.createdAt?.toDate().getTime() || 0) - (a.createdAt?.toDate().getTime() || 0));
+    const completed = filteredTodos.filter(t => t.isDone).sort((a,b) => (b.completedAt?.toDate().getTime() || 0) - (a.completedAt?.toDate().getTime() || 0));
     return { activeTodos: active, completedTodos: completed };
   }, [filteredTodos]);
 

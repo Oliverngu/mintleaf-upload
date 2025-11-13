@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Unit, Booking } from '../../data/mockData';
 import { db, serverTimestamp } from '../../firebase/config';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import LoadingSpinner from '../LoadingSpinner';
-import { translations } from '../../lib/i18n';
+import { translations } from '/src/lib/i18n.ts';
 import CalendarIcon from '../icons/CalendarIcon';
 import { errorToString } from '../../src/core/utils/errorToString';
 

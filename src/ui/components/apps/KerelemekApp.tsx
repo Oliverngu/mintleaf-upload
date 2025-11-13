@@ -197,7 +197,7 @@ export const KerelemekApp: React.FC<KerelemekAppProps> = ({ requests, loading, e
   const isAdmin = canManage;
 
   const { pending, approved, rejected, myRequests } = useMemo(() => {
-    const sortedRequests = [...requests].sort((a,b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+    const sortedRequests = [...requests].sort((a,b) => (b.createdAt?.toDate().getTime() || 0) - (a.createdAt?.toDate().getTime() || 0));
     return {
         pending: sortedRequests.filter(r => r.status === 'pending'),
         approved: sortedRequests.filter(r => r.status === 'approved'),
@@ -286,7 +286,7 @@ export const KerelemekApp: React.FC<KerelemekAppProps> = ({ requests, loading, e
                     <p className="font-bold text-gray-800">{req.userName}</p>
                     <p className="text-sm text-gray-600 font-semibold">
                         {req.startDate?.toDate().toLocaleDateString('hu-HU')}
-                        {(req.startDate?.toMillis() || 0) !== (req.endDate?.toMillis() || 0) ? ` - ${req.endDate?.toDate().toLocaleDateString('hu-HU')}` : ''}
+                        {(req.startDate?.toDate().getTime() || 0) !== (req.endDate?.toDate().getTime() || 0) ? ` - ${req.endDate?.toDate().toLocaleDateString('hu-HU')}` : ''}
                     </p>
                     <p className="text-xs text-gray-400 mt-1">Beérkezett: {req.createdAt?.toDate().toLocaleString('hu-HU')}</p>
                 </div>

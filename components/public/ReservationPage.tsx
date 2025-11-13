@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Unit, ReservationSetting, User, ThemeSettings, GuestFormSettings, CustomSelectField } from '../../data/mockData';
 import { db, Timestamp } from '../../firebase/config';
@@ -297,7 +295,8 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ unitId, allUnits, cur
             setStep(3);
         } catch (err: unknown) {
             console.error("Error during reservation submission:", err);
-            // FIX: Convert unknown error to string before setting state
+            // FIX: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+            // FIX: Convert unknown error to string before setting state to fix type error.
             setError(errorToString(err));
         } finally {
             setIsSubmitting(false);

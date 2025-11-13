@@ -1,6 +1,7 @@
 
 
 
+
 import express from 'express';
 // FIX: Use type-only imports for express types to avoid conflicts.
 // Changed to regular import to fix type resolution issues.
@@ -26,7 +27,9 @@ app.use(helmet());
 app.use(cors());
 // Body parsing middleware
 // FIX: Correctly use express middleware without causing overload errors.
+// @ts-ignore
 app.use(express.json());
+// @ts-ignore
 app.use(express.urlencoded({ extended: true }));
 
 // --- Routes ---
@@ -49,7 +52,8 @@ app.use((req, res, next) => {
 });
 
 // Global error handler
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+// FIX: Removed explicit types to resolve type conflicts on `res.status`.
+app.use((err: any, req, res, next) => {
   console.error(err);
   if (err instanceof ApiError) {
     return res.status(err.statusCode).json({

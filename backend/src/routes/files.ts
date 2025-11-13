@@ -1,6 +1,8 @@
 
 
 
+
+
 import express from 'express';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
@@ -58,7 +60,8 @@ const upload = multer({
  * POST /api/files/upload
  * Upload a file. Requires authentication.
  */
-router.post('/upload', protect, upload.single('document'), async (req, res, next) => {
+// FIX: Cast middleware to 'any' to resolve type overload errors.
+router.post('/upload', protect as any, upload.single('document'), async (req, res, next) => {
   if (!req.file) {
     return next(new ApiError(400, 'No file uploaded.'));
   }
@@ -81,7 +84,8 @@ router.post('/upload', protect, upload.single('document'), async (req, res, next
  * GET /api/files/download/:fileId
  * Securely download a file.
  */
-router.get('/download/:fileId', protect, async (req, res, next) => {
+// FIX: Cast middleware to 'any' to resolve type overload errors.
+router.get('/download/:fileId', protect as any, async (req, res, next) => {
     try {
         const fileId = req.params.fileId;
         

@@ -1,4 +1,5 @@
 
+
 import express from 'express';
 import { protect, authorize } from '../middleware/auth';
 import { validate } from '../middleware/validate';
@@ -10,7 +11,8 @@ import { AuditAction } from '../services/auditService';
 const router = express.Router();
 
 // All shift routes are protected
-router.use(protect);
+// FIX: Cast middleware to 'any' to resolve type overload errors.
+router.use(protect as any);
 
 /**
  * POST /api/shifts
@@ -18,8 +20,9 @@ router.use(protect);
  */
 router.post(
   '/',
-  authorize('Admin', 'Unit Admin'),
-  validate(createShiftSchema),
+  // FIX: Cast middleware to 'any' to resolve type overload errors.
+  authorize('Admin', 'Unit Admin') as any,
+  validate(createShiftSchema) as any,
   async (req, res, next) => {
     try {
       const newShift = await createShift(req.body, req.user!);
@@ -43,8 +46,9 @@ router.post(
  */
 router.put(
   '/:id',
-  authorize('Admin', 'Unit Admin'),
-  validate(updateShiftSchema),
+  // FIX: Cast middleware to 'any' to resolve type overload errors.
+  authorize('Admin', 'Unit Admin') as any,
+  validate(updateShiftSchema) as any,
   async (req, res, next) => {
     try {
       const shiftId = req.params.id;
