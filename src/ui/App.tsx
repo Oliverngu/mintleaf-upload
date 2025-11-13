@@ -298,7 +298,8 @@ const App: React.FC = () => {
       queryRef = collectionGroup(db, 'feedback');
       return onSnapshot(queryRef, snapshot => {
         const feedbackData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Feedback));
-        feedbackData.sort((a,b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+        // FIX: Use toDate().getTime() for sorting to avoid type errors with Timestamp.
+        feedbackData.sort((a,b) => (b.createdAt?.toDate().getTime() || 0) - (a.createdAt?.toDate().getTime() || 0));
         setFeedbackList(feedbackData);
       }, firestoreErrorHandler("Feedback"));
     })();
@@ -316,7 +317,8 @@ const App: React.FC = () => {
       queryRef = collectionGroup(db, 'polls');
       return onSnapshot(queryRef, snapshot => {
         const pollsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Poll));
-        pollsData.sort((a,b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+        // FIX: Use toDate().getTime() for sorting to avoid type errors with Timestamp.
+        pollsData.sort((a,b) => (b.createdAt?.toDate().getTime() || 0) - (a.createdAt?.toDate().getTime() || 0));
         setPolls(pollsData);
       }, firestoreErrorHandler("Polls"));
     })();

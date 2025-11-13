@@ -20,7 +20,7 @@ router.post(
   '/',
   authorize('Admin', 'Unit Admin'),
   validate(createShiftSchema),
-  async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  async (req, res, next) => {
     try {
       const newShift = await createShift(req.body, req.user!);
       
@@ -45,7 +45,7 @@ router.put(
   '/:id',
   authorize('Admin', 'Unit Admin'),
   validate(updateShiftSchema),
-  async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  async (req, res, next) => {
     try {
       const shiftId = req.params.id;
       const updatedShift = await updateShift(shiftId, req.body, req.user!);

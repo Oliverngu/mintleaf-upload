@@ -14,7 +14,8 @@ import {
     where,
     Timestamp,
 } from 'firebase/firestore';
-import { GoogleGenAI } from '@google/genai';
+// FIX: Corrected import to use the official @google/genai package.
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import LoadingSpinner from '../../../../components/LoadingSpinner';
 import ChatIcon from '../../../../components/icons/ChatIcon';
 
@@ -133,14 +134,14 @@ const ChatApp: React.FC<ChatAppProps> = ({ currentUser, allUsers, allUnits, acti
 
         // 1. AI Content Moderation
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+            const genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY!);
+            const model = genAI.getGenerativeModel({ model: "gemini-pro" });
             const prompt = `Analyze the following text for toxicity, insults, profanity, or other inappropriate content. Respond with only 'SAFE' if it's acceptable for a workplace chat, or 'UNSAFE' if it is not. Text: "${text}"`;
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: prompt,
-            });
+            const result = await model.generateContent(prompt);
+            const response = result.response;
+            const aiText = response.text();
 
-            if (response.text.trim().toUpperCase() === 'UNSAFE') {
+            if (aiText.trim().toUpperCase() === 'UNSAFE') {
                 if (!window.confirm("Ez az üzenet sértő lehet. Biztosan el szeretnéd küldeni?")) {
                     return; // User chose to edit
                 }

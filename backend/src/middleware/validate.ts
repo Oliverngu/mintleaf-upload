@@ -6,7 +6,7 @@ import { ZodError, z } from 'zod';
  * Middleware to validate request body, query, or params against a Zod schema.
  * @param schema - The Zod schema to validate against.
  */
-export const validate = (schema: z.Schema): express.RequestHandler => (req: express.Request, res: express.Response, next: express.NextFunction) => {
+export const validate = (schema: z.Schema): express.RequestHandler => (req, res, next) => {
   try {
     schema.parse({
       body: req.body,

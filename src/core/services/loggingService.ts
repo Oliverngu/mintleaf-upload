@@ -18,6 +18,7 @@ export const logReservationEvent = async ({ type, booking, user, details }: LogE
             source: user ? 'manual' : 'guest',
             performedByUserId: user ? user.id : null,
             performedByName: user ? user.fullName : 'Vendég',
+            // FIX: Cast serverTimestamp() to any to satisfy the Timestamp type, as it's a sentinel value.
             timestamp: serverTimestamp() as any,
             details: details || createLogDetails(type, booking),
         };

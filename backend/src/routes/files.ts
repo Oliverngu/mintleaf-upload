@@ -7,12 +7,6 @@ import { protect } from '../middleware/auth';
 import { ApiError } from '../utils/errors';
 import { hasUnitAccess } from '../middleware/auth';
 import { db } from '../services/db'; // Mock DB
-// FIX: Added url and fileURLToPath to define __dirname in ES modules
-import { fileURLToPath } from 'url';
-
-// FIX: Define __dirname for ES module scope
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
@@ -58,7 +52,7 @@ const upload = multer({
  * POST /api/files/upload
  * Upload a file. Requires authentication.
  */
-router.post('/upload', protect, upload.single('document'), async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+router.post('/upload', protect, upload.single('document'), async (req, res, next) => {
   if (!req.file) {
     return next(new ApiError(400, 'No file uploaded.'));
   }
@@ -81,7 +75,7 @@ router.post('/upload', protect, upload.single('document'), async (req: express.R
  * GET /api/files/download/:fileId
  * Securely download a file.
  */
-router.get('/download/:fileId', protect, async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+router.get('/download/:fileId', protect, async (req, res, next) => {
     try {
         const fileId = req.params.fileId;
         

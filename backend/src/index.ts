@@ -32,7 +32,7 @@ const mustache = (template: string, data: Record<string, any>): string => {
 };
 
 // --- Auth Middleware ---
-const authGuard = (allowedRoles: string[]) => async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+const authGuard = (allowedRoles: string[]) => async (req: express.Request, res: express.Response, next: NextFunction) => {
     // FIX: Use correctly typed 'req' which has the 'headers' property.
     const idToken = req.headers.authorization?.split('Bearer ')[1];
     if (!idToken) {

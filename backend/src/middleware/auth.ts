@@ -17,7 +17,7 @@ interface JwtPayload {
  * This should be used on all protected routes.
  */
 // FIX: Use RequestHandler type to ensure correct type inference for req, res, and next.
-export const protect: express.RequestHandler = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+export const protect: express.RequestHandler = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -30,9 +30,7 @@ export const protect: express.RequestHandler = (req: express.Request, res: expre
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
     req.user = {
       id: decoded.id,
-      role: (decoded.role === "Demo User"
-          ? "Guest"
-          : decoded.role) as User['role'],
+      role: (decoded.role === "Demo User" ? "Guest" : decoded.role) as User['role'],
       unitIds: decoded.unitIds,
     };
     next();
@@ -48,7 +46,7 @@ export const protect: express.RequestHandler = (req: express.Request, res: expre
  */
 // FIX: Return a RequestHandler to ensure correct type inference.
 export const authorize = (...allowedRoles: User['role'][]): express.RequestHandler => {
-  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  return (req, res, next) => {
     if (!req.user || !allowedRoles.includes(req.user.role)) {
       return next(new ApiError(403, 'Forbidden: You do not have permission to perform this action'));
     }
