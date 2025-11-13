@@ -1,13 +1,13 @@
-import { NextFunction, RequestHandler } from 'express';
-import { ZodError, ZodTypeAny } from 'zod';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
+import { ZodError, z } from 'zod';
 
 
 /**
  * Middleware to validate request body, query, or params against a Zod schema.
  * @param schema - The Zod schema to validate against.
  */
-// FIX: Removed explicit type annotations for req, res, next to allow for correct type inference from RequestHandler.
-export const validate = (schema: ZodTypeAny): RequestHandler => (req, res, next) => {
+// FIX: Changed schema type to the more generic z.Schema to allow for ZodEffects (from .refine())
+export const validate = (schema: z.Schema): RequestHandler => (req: Request, res: Response, next: NextFunction) => {
   try {
     schema.parse({
       // FIX: Use inferred 'req' type which correctly contains body, query, and params.

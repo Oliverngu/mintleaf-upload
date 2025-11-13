@@ -3,12 +3,15 @@
 
 import * as multer from 'multer';
 
+// Define the user role type for the backend, excluding 'Demo User' as it's mapped to 'Guest'.
+type BackendUserRole = 'Admin' | 'Unit Admin' | 'Unit Leader' | 'User' | 'Guest';
+
 declare global {
   namespace Express {
     export interface Request {
       user?: {
         id: string;
-        role: 'Admin' | 'Unit Admin' | 'Unit Leader' | 'User' | 'Guest' | 'Demo User';
+        role: BackendUserRole;
         unitIds: string[];
       };
       file?: multer.File;
@@ -22,7 +25,7 @@ export interface User {
   name: string;
   fullName: string;
   email: string;
-  role: 'Admin' | 'Unit Admin' | 'Unit Leader' | 'User' | 'Guest' | 'Demo User';
+  role: BackendUserRole;
   unitIds?: string[];
   position?: string;
 }

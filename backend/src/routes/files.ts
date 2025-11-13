@@ -4,22 +4,17 @@ import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 import fs from 'fs';
-// FIX: Add url and fileURLToPath to define __dirname in ES modules
-import { fileURLToPath } from 'url';
 import { protect } from '../middleware/auth';
 import { ApiError } from '../utils/errors';
 import { hasUnitAccess } from '../middleware/auth';
 import { db } from '../services/db'; // Mock DB
-
-// FIX: Define __dirname for ES module scope
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
 // --- Configuration for Multer (File Uploads) ---
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 const ALLOWED_MIME_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+// FIX: Use the globally available `__dirname` in a CommonJS environment.
 const UPLOAD_PATH = path.join(__dirname, '../../uploads');
 
 // Ensure upload directory exists

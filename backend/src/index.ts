@@ -51,7 +51,7 @@ const authGuard = (allowedRoles: string[]) => async (req: Request, res: Response
             return res.status(403).send({ error: 'Forbidden: Insufficient permissions' });
         }
         
-        req.user = { 
+        (req as any).user = { 
             id: decodedToken.uid,
             role: userRole,
             unitIds: userDoc.data()?.unitIds || [],
@@ -118,7 +118,7 @@ app.get('/email-config/:serviceId', authGuard(['Admin']), async (req: Request, r
 });
 
 app.put('/email-config/:serviceId', authGuard(['Admin']), async (req: Request, res: Response) => {
-    if (!req.user) return res.status(401).send({ message: 'Authentication error.' });
+    if (!(req as any).user) return res.status(401).send({ message: 'Authentication error.' });
     
     const writeEnabled = await getFeatureFlag('writeEnabled');
     if (!writeEnabled) {
@@ -137,7 +137,7 @@ app.put('/email-config/:serviceId', authGuard(['Admin']), async (req: Request, r
 
         await configRef.set(newConfig, { merge: true });
 
-        logAudit(req.user.id, serviceId, `Updated configuration for ${serviceId}`, { before: oldConfig, after: newConfig });
+        logAudit((req as any).user.id, serviceId, `Updated configuration for ${serviceId}`, { before: oldConfig, after: newConfig });
         
         // FIX: Use correctly typed 'res' which has the 'status' property.
         res.status(200).json({ message: 'Configuration updated successfully.' });

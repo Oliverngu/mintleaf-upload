@@ -1,4 +1,4 @@
-import express, { Express, NextFunction } from 'express';
+import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
@@ -25,7 +25,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // --- Routes ---
-app.get('/', (req, res) => {
+app.get('/', (req: Request, res: Response) => {
   // FIX: Use inferred 'res' type which has the 'send' method.
   res.send('MintLeaf Backend is running!');
 });
@@ -40,12 +40,12 @@ app.use('/api/files', fileRoutes);
 
 // --- Error Handling ---
 // Handle 404 Not Found
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   next(new ApiError(404, 'Endpoint not found'));
 });
 
 // Global error handler
-app.use((err: any, req, res, next) => {
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error(err);
   if (err instanceof ApiError) {
     // FIX: Use inferred 'res' type which has the 'status' method.

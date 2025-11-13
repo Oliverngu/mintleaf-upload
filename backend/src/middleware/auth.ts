@@ -1,11 +1,14 @@
-import { RequestHandler } from 'express';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
 import { ApiError } from '../utils/errors';
 import { User } from '../types/express.d'; // Using our defined user type
 
+// The role from the JWT can be 'Demo User', but the backend user role will be 'Guest'
+type JwtRole = User['role'] | 'Demo User';
+
 interface JwtPayload {
   id: string;
-  role: User['role'];
+  role: JwtRole;
   unitIds: string[];
 }
 
@@ -14,7 +17,7 @@ interface JwtPayload {
  * This should be used on all protected routes.
  */
 // FIX: Use RequestHandler type to ensure correct type inference for req, res, and next.
-export const protect: RequestHandler = (req, res, next) => {
+export const protect: RequestHandler = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -46,7 +49,7 @@ export const protect: RequestHandler = (req, res, next) => {
  */
 // FIX: Return a RequestHandler to ensure correct type inference.
 export const authorize = (...allowedRoles: User['role'][]): RequestHandler => {
-  return (req, res, next) => {
+  return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user || !allowedRoles.includes(req.user.role)) {
       return next(new ApiError(403, 'Forbidden: You do not have permission to perform this action'));
     }

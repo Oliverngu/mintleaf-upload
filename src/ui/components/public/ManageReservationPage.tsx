@@ -31,6 +31,7 @@ const ManageReservationPage: React.FC<ManageReservationPageProps> = ({ token, al
         }
 
         const fetchBooking = async () => {
+            setLoading(true);
             try {
                 let foundBooking: Booking | null = null;
                 let foundUnit: Unit | null = null;
