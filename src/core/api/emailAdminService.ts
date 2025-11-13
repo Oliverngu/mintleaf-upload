@@ -1,10 +1,11 @@
 import { auth } from '../firebase/config';
 import { EmailConfig, EmailServiceId, TemplateKey } from '../models/data';
 
-const BASE_URL = "https://admin-7n7vr5ep5a-lm.a.run.app/admin";
+// Use the environment variable provided by the platform, which ensures the correct URL is always used.
+const BASE_URL = (globalThis as any).ENV?.VITE_EMAIL_ADMIN_BASE;
 
 // For debugging purposes, it's useful to log the final URL being used.
-console.log("Final Email Admin Service BASE_URL:", BASE_URL);
+console.log("Using Email Admin Service BASE_URL from environment:", BASE_URL);
 
 
 const getAuthToken = async (): Promise<string> => {
@@ -79,7 +80,17 @@ export const sendTestEmail = async (payload: TestEmailPayload): Promise<TestEmai
         },
         body: JSON.stringify(payload),
     });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || data.message || 'Failed to send test email.');
-    return data;
+    
+    if (!response.ok) {
+        let errorMessage = 'Failed to send test email.';
+        try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch (jsonError) {
+            errorMessage = `Server responded with status ${response.status}.`;
+        }
+        throw new Error(errorMessage);
+    }
+
+    return response.json();
 };

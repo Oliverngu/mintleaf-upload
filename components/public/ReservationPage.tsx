@@ -294,7 +294,7 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ unitId, allUnits, cur
             setStep(3);
         } catch (err: unknown) {
             console.error("Error during reservation submission:", err);
-            // FIX: The caught error 'err' of type 'unknown' is not assignable to a state expecting a string. Converted to string using errorToString utility.
+            // FIX: The caught error `err` is of type 'unknown' and cannot be directly assigned to the 'error' state, which expects a string. It is now converted to a string using the `errorToString` utility.
             setError(errorToString(err));
         } finally {
             setIsSubmitting(false);
@@ -424,6 +424,7 @@ const Step1Date: React.FC<{
     );
 }
 
+// FIX: Define Step2Details component
 const Step2Details: React.FC<any> = ({ selectedDate, formData, setFormData, onBack, onSubmit, isSubmitting, settings, themeProps, t, locale, error }) => {
     const [formErrors, setFormErrors] = useState({ name: '', phone: '', email: '' });
     
@@ -496,7 +497,7 @@ const Step2Details: React.FC<any> = ({ selectedDate, formData, setFormData, onBa
     )
 }
 
-// FIX: Define missing Step3Confirmation component
+// FIX: Define Step3Confirmation component
 const Step3Confirmation: React.FC<{ onReset: () => void, themeProps: any, t: any, submittedData: any, unit: Unit, locale: Locale, settings: ReservationSetting }> = ({ onReset, themeProps, t, submittedData, unit, locale, settings }) => {
     const [copied, setCopied] = useState(false);
     
@@ -601,5 +602,6 @@ const Step3Confirmation: React.FC<{ onReset: () => void, themeProps: any, t: any
         </div>
     );
 }
+
 
 export default ReservationPage;

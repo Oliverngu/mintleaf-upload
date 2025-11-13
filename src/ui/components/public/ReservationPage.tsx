@@ -303,7 +303,7 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ unitId, allUnits, cur
             setStep(3);
         } catch (err: unknown) {
             console.error("Error during reservation submission:", err);
-            // FIX: The caught error 'err' of type 'unknown' is not assignable to a state expecting a string. Converted to string using errorToString utility.
+            // FIX: The caught error `err` is of type 'unknown'. It must be converted to a string before updating the state.
             setError(errorToString(err));
         } finally {
             setIsSubmitting(false);

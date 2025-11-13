@@ -83,14 +83,12 @@ const logAudit = (userId: string, serviceId: string, details: string, diff: any)
 };
 
 // --- Routes ---
-const router = express.Router();
-
-router.get("/", (req: Request, res: Response) => {
+app.get("/", (req: Request, res: Response) => {
     logger.info("Health check request received at router root.");
     res.status(200).send("Admin function is alive!");
 });
 
-router.get('/email-config/:serviceId', authGuard(['Admin']), async (req: Request, res: Response) => {
+app.get('/email-config/:serviceId', authGuard(['Admin']), async (req: Request, res: Response) => {
     try {
         const { serviceId } = req.params;
         const configDoc = await db.collection('emailConfigs').doc(serviceId).get();
@@ -118,7 +116,7 @@ router.get('/email-config/:serviceId', authGuard(['Admin']), async (req: Request
     }
 });
 
-router.put('/email-config/:serviceId', authGuard(['Admin']), async (req: Request, res: Response) => {
+app.put('/email-config/:serviceId', authGuard(['Admin']), async (req: Request, res: Response) => {
     if (!req.user) return res.status(401).send({ message: 'Authentication error.' });
     
     const writeEnabled = await getFeatureFlag('writeEnabled');
@@ -145,7 +143,7 @@ router.put('/email-config/:serviceId', authGuard(['Admin']), async (req: Request
     }
 });
 
-router.post('/email-test', authGuard(['Admin']), async (req: Request, res: Response) => {
+app.post('/email-test', authGuard(['Admin']), async (req: Request, res: Response) => {
     try {
         const { serviceId, templateKey, to, samplePayload } = req.body;
         logger.info(`Processing /email-test for service: ${serviceId}, template: ${templateKey}`);
@@ -194,10 +192,6 @@ router.post('/email-test', authGuard(['Admin']), async (req: Request, res: Respo
         res.status(500).send({ message: 'Internal server error.' });
     }
 });
-
-// The Cloud Function URL is .../admin, so we mount the router at the root of the Express app.
-app.use('/', router);
-
 
 // Main function export
 export const admin = onRequest({ maxInstances: 10, secrets: ["RESEND_API_KEY", "RESEND_FROM_DEFAULT"] }, app);
