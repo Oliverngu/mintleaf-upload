@@ -294,8 +294,8 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ unitId, allUnits, cur
             setStep(3);
         } catch (err: unknown) {
             console.error("Error during reservation submission:", err);
-            // FIX: Convert 'unknown' error type to string before setting state.
-            setError(err instanceof Error ? err.message : t.genericError);
+            // FIX: Use robust error handling utility to convert unknown error to string.
+            setError(errorToString(err));
         } finally {
             setIsSubmitting(false);
         }
@@ -602,6 +602,5 @@ const Step3Confirmation: React.FC<{ onReset: () => void, themeProps: any, t: any
         </div>
     );
 }
-
 
 export default ReservationPage;

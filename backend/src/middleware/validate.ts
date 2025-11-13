@@ -8,7 +8,7 @@ import { RequestHandler } from 'express';
  * Middleware to validate request body, query, or params against a Zod schema.
  * @param schema - The Zod schema to validate against.
  */
-export const validate = (schema: z.ZodObject<any>): RequestHandler => (req: Request, res: Response, next: NextFunction) => {
+export const validate = (schema: z.Schema): RequestHandler => (req: Request, res: Response, next: NextFunction) => {
   try {
     schema.parse({
       body: req.body,

@@ -1,7 +1,6 @@
 // This file extends the Express Request interface to include our custom 'user' property.
 // This avoids TypeScript errors when we attach the authenticated user to the request object.
 
-import { User as AppUser } from './models'; // Assuming User type is defined elsewhere
 import * as multer from 'multer';
 
 declare global {

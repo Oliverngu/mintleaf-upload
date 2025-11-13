@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
@@ -27,10 +27,12 @@ if (!fs.existsSync(UPLOAD_PATH)) {
 }
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  // FIX: Replaced Express.Multer.File with multer.File to resolve type error.
+  destination: (req: Request, file: multer.File, cb: (error: Error | null, destination: string) => void) => {
     cb(null, UPLOAD_PATH);
   },
-  filename: (req, file, cb) => {
+  // FIX: Replaced Express.Multer.File with multer.File to resolve type error.
+  filename: (req: Request, file: multer.File, cb: (error: Error | null, filename: string) => void) => {
     // Rename file with a UUID to prevent filename conflicts and directory traversal attacks
     const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
     cb(null, uniqueName);
@@ -40,7 +42,8 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: { fileSize: MAX_FILE_SIZE },
-  fileFilter: (req, file, cb) => {
+  // FIX: Replaced Express.Multer.File with multer.File to resolve type error.
+  fileFilter: (req: Request, file: multer.File, cb: multer.FileFilterCallback) => {
     // Validate MIME type
     if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
       cb(null, true);
@@ -54,8 +57,7 @@ const upload = multer({
  * POST /api/files/upload
  * Upload a file. Requires authentication.
  */
-// FIX: Cast middleware to 'any' to resolve type conflicts in Express router.
-router.post('/upload', protect as any, upload.single('document'), async (req, res, next) => {
+router.post('/upload', protect, upload.single('document'), async (req: Request, res: Response, next: NextFunction) => {
   if (!req.file) {
     return next(new ApiError(400, 'No file uploaded.'));
   }
@@ -78,8 +80,7 @@ router.post('/upload', protect as any, upload.single('document'), async (req, re
  * GET /api/files/download/:fileId
  * Securely download a file.
  */
-// FIX: Cast middleware to 'any' to resolve type conflicts in Express router.
-router.get('/download/:fileId', protect as any, async (req, res, next) => {
+router.get('/download/:fileId', protect, async (req: Request, res: Response, next: NextFunction) => {
     try {
         const fileId = req.params.fileId;
         

@@ -1,4 +1,4 @@
-import express, { Express, NextFunction } from 'express';
+import express, { Express, NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
@@ -20,14 +20,11 @@ app.use(helmet());
 // Enable CORS for all routes
 app.use(cors());
 // Body parsing middleware
-// FIX: Cast middleware to 'any' to resolve 'No overload matches this call' error.
-app.use(express.json() as any);
-// FIX: Cast middleware to 'any' to resolve 'No overload matches this call' error.
-app.use(express.urlencoded({ extended: true }) as any);
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // --- Routes ---
-// FIX: Use 'any' for req and res to bypass type errors on properties like .send.
-app.get('/', (req: any, res: any) => {
+app.get('/', (req: Request, res: Response) => {
   res.send('MintLeaf Backend is running!');
 });
 
@@ -41,14 +38,12 @@ app.use('/api/files', fileRoutes);
 
 // --- Error Handling ---
 // Handle 404 Not Found
-// FIX: Use 'any' for req and res to prevent type errors.
-app.use((req: any, res: any, next: NextFunction) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   next(new ApiError(404, 'Endpoint not found'));
 });
 
 // Global error handler
-// FIX: Use 'any' for req and res to bypass type errors on properties like .status.
-app.use((err: any, req: any, res: any, next: NextFunction) => {
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error(err);
   if (err instanceof ApiError) {
     return res.status(err.statusCode).json({
