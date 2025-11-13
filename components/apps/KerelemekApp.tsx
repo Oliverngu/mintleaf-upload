@@ -197,7 +197,7 @@ const KerelemekApp: React.FC<KerelemekAppProps> = ({ requests, loading, error, c
   const isAdmin = canManage;
 
   const { pending, approved, rejected, myRequests } = useMemo(() => {
-    const sortedRequests = [...requests].sort((a,b) => (b.createdAt?.toDate().getTime() || 0) - (a.createdAt?.toDate().getTime() || 0));
+    const sortedRequests = [...requests].sort((a,b) => (b.createdAt?.toDate()?.getTime() || 0) - (a.createdAt?.toDate()?.getTime() || 0));
     return {
         pending: sortedRequests.filter(r => r.status === 'pending'),
         approved: sortedRequests.filter(r => r.status === 'approved'),

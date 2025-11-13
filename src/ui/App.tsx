@@ -299,7 +299,7 @@ const App: React.FC = () => {
       return onSnapshot(queryRef, snapshot => {
         const feedbackData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Feedback));
         // FIX: Use toDate().getTime() for sorting to avoid type errors with Timestamp.
-        feedbackData.sort((a,b) => (b.createdAt?.toDate().getTime() || 0) - (a.createdAt?.toDate().getTime() || 0));
+        feedbackData.sort((a,b) => (b.createdAt?.toDate()?.getTime() || 0) - (a.createdAt?.toDate()?.getTime() || 0));
         setFeedbackList(feedbackData);
       }, firestoreErrorHandler("Feedback"));
     })();
@@ -318,7 +318,7 @@ const App: React.FC = () => {
       return onSnapshot(queryRef, snapshot => {
         const pollsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Poll));
         // FIX: Use toDate().getTime() for sorting to avoid type errors with Timestamp.
-        pollsData.sort((a,b) => (b.createdAt?.toDate().getTime() || 0) - (a.createdAt?.toDate().getTime() || 0));
+        pollsData.sort((a,b) => (b.createdAt?.toDate()?.getTime() || 0) - (a.createdAt?.toDate()?.getTime() || 0));
         setPolls(pollsData);
       }, firestoreErrorHandler("Polls"));
     })();

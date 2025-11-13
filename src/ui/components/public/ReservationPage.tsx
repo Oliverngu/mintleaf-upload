@@ -6,7 +6,7 @@ import { doc, getDoc, collection, addDoc, setDoc, query, where, getDocs } from '
 import LoadingSpinner from '../../../../components/LoadingSpinner';
 import CalendarIcon from '../../../../components/icons/CalendarIcon';
 import CopyIcon from '../../../../components/icons/CopyIcon'; // Új import
-import { translations } from '/src/lib/i1n.ts'; // Import a kiszervezett fájlból
+import { translations } from '../../../lib/i18n.ts'; // Import a kiszervezett fájlból
 import { sendEmail, createGuestReservationConfirmationEmail, createUnitNewReservationNotificationEmail } from '../../../core/api/emailService';
 import { logReservationEvent } from '../../../core/services/loggingService';
 // FIX: Import the errorToString utility to handle unknown error types.
@@ -304,8 +304,7 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ unitId, allUnits, cur
             setStep(3);
         } catch (err: unknown) {
             console.error("Error during reservation submission:", err);
-            // FIX: Convert unknown error to string before setting state.
-            // FIX: Convert unknown error to string before setting state to fix type error.
+            // FIX: The 'err' object is of type 'unknown' and cannot be directly passed to 'setError'. Using 'errorToString' to safely convert it.
             setError(errorToString(err));
         } finally {
             setIsSubmitting(false);

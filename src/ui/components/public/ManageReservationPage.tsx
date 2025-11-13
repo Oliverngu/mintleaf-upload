@@ -3,7 +3,7 @@ import { Unit, Booking } from '../../../core/models/data';
 import { db, serverTimestamp } from '../../../core/firebase/config';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import LoadingSpinner from '../../../../components/LoadingSpinner';
-import { translations } from '/src/lib/i1n.ts';
+import { translations } from '../../../lib/i18n.ts';
 import CalendarIcon from '../../../../components/icons/CalendarIcon';
 import { logReservationEvent } from '../../../core/services/loggingService';
 // FIX: Import the errorToString utility to handle unknown error types.
