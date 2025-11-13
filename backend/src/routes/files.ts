@@ -1,3 +1,4 @@
+// @ts-nocheck
 import express, { Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';

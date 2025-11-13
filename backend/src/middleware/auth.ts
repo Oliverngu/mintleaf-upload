@@ -27,7 +27,10 @@ export const protect: RequestHandler = (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
     req.user = {
       id: decoded.id,
-      role: decoded.role,
+      role:
+        decoded.role === "Demo User"
+          ? "Guest"
+          : decoded.role,
       unitIds: decoded.unitIds,
     };
     next();

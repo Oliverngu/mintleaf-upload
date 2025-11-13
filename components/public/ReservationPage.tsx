@@ -8,6 +8,7 @@ import CopyIcon from '../icons/CopyIcon'; // Új import
 import { translations } from '../../src/lib/i18n'; // Import a kiszervezett fájlból
 // FIX: Corrected import paths to point to the 'src' directory.
 import { sendEmail, createGuestReservationConfirmationEmail, createUnitNewReservationNotificationEmail } from '../../src/core/api/emailService';
+// FIX: Import the errorToString utility to handle unknown error types.
 import { errorToString } from '../../src/core/utils/errorToString';
 
 type Locale = 'hu' | 'en';
@@ -294,7 +295,7 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ unitId, allUnits, cur
             setStep(3);
         } catch (err: unknown) {
             console.error("Error during reservation submission:", err);
-            // FIX: Use robust error handling utility to convert unknown error to string.
+            // FIX: The caught error `err` is of type `unknown`. It must be converted to a string before being passed to `setError`, which expects a string argument.
             setError(errorToString(err));
         } finally {
             setIsSubmitting(false);

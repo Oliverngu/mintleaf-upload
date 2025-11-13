@@ -6,6 +6,7 @@ import LoadingSpinner from '../../../../components/LoadingSpinner';
 import { translations } from '../../../lib/i18n';
 import CalendarIcon from '../../../../components/icons/CalendarIcon';
 import { logReservationEvent } from '../../../core/services/loggingService';
+// FIX: Import the errorToString utility to handle unknown error types.
 import { errorToString } from '../../../core/utils/errorToString';
 
 type Locale = 'hu' | 'en';
