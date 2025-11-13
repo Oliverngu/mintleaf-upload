@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Unit, Booking } from '../../data/mockData';
 import { db, serverTimestamp } from '../../firebase/config';
@@ -5,6 +6,7 @@ import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import LoadingSpinner from '../LoadingSpinner';
 import { translations } from '../../lib/i18n';
 import CalendarIcon from '../icons/CalendarIcon';
+import { errorToString } from '../../src/core/utils/errorToString';
 
 type Locale = 'hu' | 'en';
 
@@ -54,7 +56,7 @@ const ManageReservationPage: React.FC<ManageReservationPageProps> = ({ token, al
                 }
             } catch (err: any) {
                 console.error("Error fetching reservation:", err);
-                setError('Hiba a foglalás betöltésekor. Ellenőrizze a linket, vagy próbálja meg később.');
+                setError(errorToString(err));
             } finally {
                 setLoading(false);
             }

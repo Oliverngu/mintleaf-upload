@@ -1,6 +1,6 @@
+
 import React from 'react';
 
-// FIX: Changed component definition to use React.FC to resolve prop type errors.
 const ArrowDownIcon: React.FC<{ className?: string }> = ({ className = "h-5 w-5" }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"

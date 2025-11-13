@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 // FIX: Corrected import paths to point to the active component versions in the src directory.
 import Login from './src/ui/components/Login';
@@ -299,7 +300,7 @@ const App: React.FC = () => {
       queryRef = collectionGroup(db, 'feedback');
       return onSnapshot(queryRef, snapshot => {
         const feedbackData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Feedback));
-        feedbackData.sort((a,b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+        feedbackData.sort((a,b) => (b.createdAt?.toDate().getTime() || 0) - (a.createdAt?.toDate().getTime() || 0));
         setFeedbackList(feedbackData);
       }, firestoreErrorHandler("Feedback"));
     })();
@@ -317,7 +318,7 @@ const App: React.FC = () => {
       queryRef = collectionGroup(db, 'polls');
       return onSnapshot(queryRef, snapshot => {
         const pollsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Poll));
-        pollsData.sort((a,b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+        pollsData.sort((a,b) => (b.createdAt?.toDate().getTime() || 0) - (a.createdAt?.toDate().getTime() || 0));
         setPolls(pollsData);
       }, firestoreErrorHandler("Polls"));
     })();

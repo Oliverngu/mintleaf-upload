@@ -1,12 +1,21 @@
+
+
+
 import express from 'express';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 import fs from 'fs';
+// FIX: Add url and fileURLToPath to define __dirname in ES modules
+import { fileURLToPath } from 'url';
 import { protect } from '../middleware/auth';
 import { ApiError } from '../utils/errors';
 import { hasUnitAccess } from '../middleware/auth';
 import { db } from '../services/db'; // Mock DB
+
+// FIX: Define __dirname for ES module scope
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
@@ -22,11 +31,9 @@ if (!fs.existsSync(UPLOAD_PATH)) {
 }
 
 const storage = multer.diskStorage({
-  // FIX: Replaced Express.Multer.File with multer.File to resolve type error.
   destination: (req: express.Request, file: multer.File, cb: (error: Error | null, destination: string) => void) => {
     cb(null, UPLOAD_PATH);
   },
-  // FIX: Replaced Express.Multer.File with multer.File to resolve type error.
   filename: (req: express.Request, file: multer.File, cb: (error: Error | null, filename: string) => void) => {
     // Rename file with a UUID to prevent filename conflicts and directory traversal attacks
     const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
@@ -37,7 +44,6 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: { fileSize: MAX_FILE_SIZE },
-  // FIX: Replaced Express.Multer.File with multer.File to resolve type error.
   fileFilter: (req: express.Request, file: multer.File, cb: multer.FileFilterCallback) => {
     // Validate MIME type
     if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {

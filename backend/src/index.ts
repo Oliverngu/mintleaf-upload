@@ -1,8 +1,13 @@
+
+
+
 import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import * as fbAdmin from "firebase-admin";
-// FIX: Import Request and Response directly from express and remove local redefinition.
-import express, { Request, Response, NextFunction } from "express";
+import express from "express";
+// FIX: Use type-only imports for express types to avoid conflicts with Firebase function types.
+// Changed to regular import to fix type resolution issues.
+import { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { Resend } from 'resend';
 
@@ -16,7 +21,6 @@ const db = fbAdmin.firestore();
 const app = express();
 
 // --- Core Middleware ---
-// FIX: Correctly use cors middleware.
 app.use(cors({ origin: true }));
 app.use(express.json());
 
@@ -33,11 +37,9 @@ const mustache = (template: string, data: Record<string, any>): string => {
 
 // --- Auth Middleware ---
 const authGuard = (allowedRoles: string[]) => async (req: Request, res: Response, next: NextFunction) => {
-    // FIX: Use correctly typed 'req' which has the 'headers' property.
     const idToken = req.headers.authorization?.split('Bearer ')[1];
     if (!idToken) {
         logger.warn('Auth guard failed: No token provided.');
-        // FIX: Use correctly typed 'res' which has the 'status' property.
         return res.status(401).send({ error: 'Unauthorized: No token provided' });
     }
     try {
@@ -47,7 +49,6 @@ const authGuard = (allowedRoles: string[]) => async (req: Request, res: Response
         
         if (!userRole || !allowedRoles.includes(userRole)) {
             logger.warn(`Auth guard failed: User ${decodedToken.uid} with role '${userRole}' is not in allowed roles [${allowedRoles.join(', ')}].`);
-            // FIX: Use correctly typed 'res' which has the 'status' property.
             return res.status(403).send({ error: 'Forbidden: Insufficient permissions' });
         }
         
@@ -59,7 +60,6 @@ const authGuard = (allowedRoles: string[]) => async (req: Request, res: Response
         next();
     } catch (error) {
         logger.error("Auth guard failed: Token verification error.", error);
-        // FIX: Use correctly typed 'res' which has the 'status' property.
         return res.status(401).send({ error: 'Unauthorized: Invalid token' });
     }
 };
@@ -80,21 +80,18 @@ const logAudit = (userId: string, serviceId: string, details: string, diff: any)
 };
 
 // --- Routes ---
-app.get("/", (req: Request, res: Response) => {
+app.get("/", (req, res) => {
     logger.info("Health check request received at router root.");
-    // FIX: Use correctly typed 'res' which has the 'status' property.
     res.status(200).send("Admin function is alive!");
 });
 
-app.get('/email-config/:serviceId', authGuard(['Admin']), async (req: Request, res: Response) => {
+app.get('/email-config/:serviceId', authGuard(['Admin']), async (req, res) => {
     try {
-        // FIX: Use correctly typed 'req' which has the 'params' property.
         const { serviceId } = req.params;
         const configDoc = await db.collection('emailConfigs').doc(serviceId).get();
         const writeEnabled = await getFeatureFlag('writeEnabled');
         
         if (!configDoc.exists) {
-            // FIX: Use correctly typed 'res' which has the 'status' property.
             return res.status(404).json({ error: 'Config not found' });
         }
         
@@ -112,22 +109,19 @@ app.get('/email-config/:serviceId', authGuard(['Admin']), async (req: Request, r
         res.status(200).json({ config, writeEnabled });
     } catch (error) {
         logger.error(`GET /email-config/${req.params.serviceId} failed:`, error);
-        // FIX: Use correctly typed 'res' which has the 'status' property.
         res.status(500).send({ error: 'Internal Server Error.' });
     }
 });
 
-app.put('/email-config/:serviceId', authGuard(['Admin']), async (req: Request, res: Response) => {
+app.put('/email-config/:serviceId', authGuard(['Admin']), async (req, res) => {
     if (!(req as any).user) return res.status(401).send({ message: 'Authentication error.' });
     
     const writeEnabled = await getFeatureFlag('writeEnabled');
     if (!writeEnabled) {
-        // FIX: Use correctly typed 'res' which has the 'status' property.
         return res.status(403).send({ message: 'Forbidden: Write operations are disabled.' });
     }
     
     try {
-        // FIX: Use correctly typed 'req' which has the 'params' property.
         const { serviceId } = req.params;
         const newConfig = req.body;
         
@@ -139,24 +133,20 @@ app.put('/email-config/:serviceId', authGuard(['Admin']), async (req: Request, r
 
         logAudit((req as any).user.id, serviceId, `Updated configuration for ${serviceId}`, { before: oldConfig, after: newConfig });
         
-        // FIX: Use correctly typed 'res' which has the 'status' property.
         res.status(200).json({ message: 'Configuration updated successfully.' });
     } catch (error) {
         logger.error(`PUT /email-config/${req.params.serviceId} failed:`, error);
-        // FIX: Use correctly typed 'res' which has the 'status' property.
         res.status(500).send({ message: 'Internal server error.' });
     }
 });
 
-app.post('/email-test', authGuard(['Admin']), async (req: Request, res: Response) => {
+app.post('/email-test', authGuard(['Admin']), async (req, res) => {
     try {
-        // FIX: Use correctly typed 'req' which has the 'body' property.
         const { serviceId, templateKey, to, samplePayload } = req.body;
         logger.info(`Processing /email-test for service: ${serviceId}, template: ${templateKey}`);
 
         const configDoc = await db.collection('emailConfigs').doc(serviceId).get();
         if (!configDoc.exists) {
-            // FIX: Use correctly typed 'res' which has the 'status' property.
             return res.status(404).send({ message: 'Configuration for this service not found.' });
         }
         const config = configDoc.data()!;
@@ -196,7 +186,6 @@ app.post('/email-test', authGuard(['Admin']), async (req: Request, res: Response
 
     } catch (error) {
         logger.error("POST /email-test failed:", error);
-        // FIX: Use correctly typed 'res' which has the 'status' property.
         res.status(500).send({ message: 'Internal server error.' });
     }
 });
@@ -205,6 +194,7 @@ app.post('/email-test', authGuard(['Admin']), async (req: Request, res: Response
 export const admin = onRequest({ maxInstances: 10, secrets: ["RESEND_API_KEY", "RESEND_FROM_DEFAULT"] }, app);
 
 // Separate health check function (can be removed if not needed, but good for simple verification)
+// FIX: Removed explicit types from request and response to allow for correct type inference from onRequest.
 export const resendHealth = onRequest({ secrets: ["RESEND_API_KEY", "RESEND_FROM_DEFAULT"] }, async (req, res) => {
     const { to } = req.query;
     if (!to || typeof to !== 'string') {
@@ -220,14 +210,11 @@ export const resendHealth = onRequest({ secrets: ["RESEND_API_KEY", "RESEND_FROM
             html: '<strong>This is a test email.</strong>',
         });
         if (error) {
-            // FIX: Use correctly typed 'res' which has the 'status' property.
             res.status(500).json(error);
         } else {
-            // FIX: Use correctly typed 'res' which has the 'status' property.
             res.status(200).json(data);
         }
     } catch (e) {
-        // FIX: Use correctly typed 'res' which has the 'status' property.
         res.status(500).send("An unexpected error occurred.");
     }
 });

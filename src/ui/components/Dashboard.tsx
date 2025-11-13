@@ -12,8 +12,8 @@ import AdminTodoApp from './apps/AdminTodoApp';
 import ContactsApp from './apps/ContactsApp';
 import TudastarApp from './apps/TudastarApp';
 import VelemenyekApp from './apps/VelemenyekApp';
-// FIX: Changed to a default import to match the component's export style.
-import BerezesemApp from './apps/BerezesemApp';
+// FIX: Changed to a named import to match the component's export style.
+import { BerezesemApp } from './apps/BerezesemApp';
 import AdminisztracioApp from './apps/AdminisztracioApp';
 import HomeDashboard from './HomeDashboard';
 import PollsApp from './polls/PollsApp';

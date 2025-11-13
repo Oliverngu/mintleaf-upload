@@ -1,4 +1,8 @@
-import express from 'express';
+
+
+// FIX: Use RequestHandler type to ensure correct type inference for req, res, and next.
+// Changed to regular import to fix type resolution issues.
+import { RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
 import { ApiError } from '../utils/errors';
 import { User } from '../types/express.d'; // Using our defined user type
@@ -17,7 +21,7 @@ interface JwtPayload {
  * This should be used on all protected routes.
  */
 // FIX: Use RequestHandler type to ensure correct type inference for req, res, and next.
-export const protect: express.RequestHandler = (req, res, next) => {
+export const protect: RequestHandler = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -45,7 +49,7 @@ export const protect: express.RequestHandler = (req, res, next) => {
  * @example router.post('/', protect, authorize('Admin', 'Unit Admin'), createShift);
  */
 // FIX: Return a RequestHandler to ensure correct type inference.
-export const authorize = (...allowedRoles: User['role'][]): express.RequestHandler => {
+export const authorize = (...allowedRoles: User['role'][]): RequestHandler => {
   return (req, res, next) => {
     if (!req.user || !allowedRoles.includes(req.user.role)) {
       return next(new ApiError(403, 'Forbidden: You do not have permission to perform this action'));

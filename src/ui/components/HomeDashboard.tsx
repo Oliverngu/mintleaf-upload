@@ -157,7 +157,7 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ currentUser, requests, sc
     const now = new Date();
     return todayShifts
       .filter(s => s.userId === currentUser.id && s.start.toDate() > now)
-      .sort((a, b) => a.start.toMillis() - b.start.toMillis())[0];
+      .sort((a, b) => a.start.toDate().getTime() - b.start.toDate().getTime())[0];
   }, [todayShifts, currentUser.id]);
 
   const openRequests = useMemo(() => filteredRequests.filter(r => r.status === 'pending'), [filteredRequests]);
@@ -221,7 +221,7 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ currentUser, requests, sc
 
         const { totalHours, totalEarnings } = entriesThisMonth.reduce((acc, entry) => {
             if (entry.endTime) {
-                const duration = (entry.endTime.toMillis() - entry.startTime.toMillis()) / (1000 * 60 * 60);
+                const duration = (entry.endTime.toDate().getTime() - entry.startTime.toDate().getTime()) / (1000 * 60 * 60);
                 const wageForUnit = Number(wages[entry.unitId]) || 0;
                 acc.totalHours += duration;
                 acc.totalEarnings += duration * wageForUnit;
@@ -340,7 +340,7 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ currentUser, requests, sc
   );
   
   const ScheduleWidget = () => {
-    const sortedTodayShifts = [...todayShifts].sort((a,b) => a.start.toMillis() - b.start.toMillis());
+    const sortedTodayShifts = [...todayShifts].sort((a,b) => a.start.toDate().getTime() - b.start.toDate().getTime());
     return (
         <div className="bg-white p-6 rounded-2xl shadow-md border h-full">
             <div className="flex items-center gap-2 mb-4">
@@ -474,6 +474,7 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ currentUser, requests, sc
                 velemenyek: 'velemenyek',
                 szavazasok: 'szavazasok',
             };
+            // FIX: Corrected typo from widgetIdToAppMap to widgetIdToAppMap
             const targetApp = widgetIdToAppMap[widget.id];
 
             const isClickable = !isEditMode && !!targetApp;

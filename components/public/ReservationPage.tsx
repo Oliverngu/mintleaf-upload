@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Unit, ReservationSetting, User, ThemeSettings, GuestFormSettings, CustomSelectField } from '../../data/mockData';
 import { db, Timestamp } from '../../firebase/config';
@@ -5,7 +7,7 @@ import { doc, getDoc, collection, addDoc, setDoc, query, where, getDocs } from '
 import LoadingSpinner from '../LoadingSpinner';
 import CalendarIcon from '../icons/CalendarIcon';
 import CopyIcon from '../icons/CopyIcon'; // Új import
-import { translations } from '../../src/lib/i18n'; // Import a kiszervezett fájlból
+import { translations } from '../../src/lib/i1n'; // Import a kiszervezett fájlból
 // FIX: Corrected import paths to point to the 'src' directory.
 import { sendEmail, createGuestReservationConfirmationEmail, createUnitNewReservationNotificationEmail } from '../../src/core/api/emailService';
 // FIX: Import the errorToString utility to handle unknown error types.
@@ -295,7 +297,7 @@ const ReservationPage: React.FC<ReservationPageProps> = ({ unitId, allUnits, cur
             setStep(3);
         } catch (err: unknown) {
             console.error("Error during reservation submission:", err);
-            // FIX: The caught error `err` is of type `unknown`. It must be converted to a string before being passed to `setError`, which expects a string argument.
+            // FIX: Convert unknown error to string before setting state
             setError(errorToString(err));
         } finally {
             setIsSubmitting(false);

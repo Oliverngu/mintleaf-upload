@@ -1,8 +1,13 @@
-import express, { Request, Response, NextFunction } from 'express';
+
+
+
+import express from 'express';
+// FIX: Use type-only imports for express types to avoid conflicts.
+// Changed to regular import to fix type resolution issues.
+import { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
-import { loginLimiter } from './middleware/rateLimiter';
 import { ApiError } from './utils/errors';
 
 // Import routes
@@ -25,8 +30,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // --- Routes ---
-// FIX: Use inferred 'res' type which has the 'send' method.
-app.get('/', (req: Request, res: Response) => {
+app.get('/', (req, res) => {
   res.send('MintLeaf Backend is running!');
 });
 
@@ -45,7 +49,6 @@ app.use((req, res, next) => {
 });
 
 // Global error handler
-// FIX: Use inferred 'res' type which has the 'status' method.
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error(err);
   if (err instanceof ApiError) {
@@ -54,7 +57,6 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
       errors: err.errors,
     });
   }
-  // FIX: Use inferred 'res' type which has the 'status' method.
   return res.status(500).json({ message: 'Internal Server Error' });
 });
 

@@ -20,7 +20,7 @@ interface BerezesemAppProps {
 
 const calculateShiftDuration = (shift: Shift): number => {
     if (!shift.start || !shift.end) return 0;
-    const durationMs = shift.end.toMillis() - shift.start.toMillis();
+    const durationMs = shift.end.toDate().getTime() - shift.start.toDate().getTime();
     return durationMs > 0 ? durationMs / (1000 * 60 * 60) : 0;
 };
 
@@ -55,8 +55,8 @@ const DayEntriesModal: React.FC<{
                     <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-200 text-gray-500">&times;</button>
                 </div>
                 <div className="p-6 max-h-[60vh] overflow-y-auto space-y-3">
-                    {entries.length > 0 ? entries.sort((a,b) => a.startTime.toMillis() - b.startTime.toMillis()).map(entry => {
-                        const duration = entry.endTime ? (entry.endTime.toMillis() - entry.startTime.toMillis()) / (1000 * 60 * 60) : 0;
+                    {entries.length > 0 ? entries.sort((a,b) => a.startTime.toDate().getTime() - b.startTime.toDate().getTime()).map(entry => {
+                        const duration = entry.endTime ? (entry.endTime.toDate().getTime() - entry.startTime.toDate().getTime()) / (1000 * 60 * 60) : 0;
                         return (
                             <div key={entry.id} className="bg-gray-50 p-3 rounded-lg flex justify-between items-center">
                                 <div>
@@ -346,7 +346,7 @@ const BerezesemApp: React.FC<BerezesemAppProps> = ({ currentUser, schedule, acti
     const completedEntries = useMemo(() => 
         timeEntries
             .filter(entry => entry.status === 'completed' && entry.endTime)
-            .sort((a, b) => b.startTime.toMillis() - a.startTime.toMillis()),
+            .sort((a, b) => b.startTime.toDate().getTime() - a.startTime.toDate().getTime()),
         [timeEntries]
     );
 
@@ -368,7 +368,7 @@ const BerezesemApp: React.FC<BerezesemAppProps> = ({ currentUser, schedule, acti
         const { totalHours, totalEarnings } = completedEntries.reduce((acc, entry) => {
             const entryDate = entry.startTime.toDate();
             if (entryDate >= startOfMonth && entryDate <= endOfMonth && entry.endTime) {
-                const duration = (entry.endTime.toMillis() - entry.startTime.toMillis()) / (1000 * 60 * 60);
+                const duration = (entry.endTime.toDate().getTime() - entry.startTime.toDate().getTime()) / (1000 * 60 * 60);
                 const wageForUnit = Number(wages[entry.unitId]) || 0;
                 acc.totalHours += duration;
                 acc.totalEarnings += duration * wageForUnit;
@@ -460,7 +460,7 @@ const BerezesemApp: React.FC<BerezesemAppProps> = ({ currentUser, schedule, acti
                         const dateKey = toLocalDateKey(day);
                         const dayEntries = entriesByDate.get(dateKey) || [];
                         const dayHours = dayEntries.reduce((sum, entry) => {
-                            if (entry.endTime) return sum + (entry.endTime.toMillis() - entry.startTime.toMillis()) / (1000 * 60 * 60);
+                            if (entry.endTime) return sum + (entry.endTime.toDate().getTime() - entry.startTime.toDate().getTime()) / (1000 * 60 * 60);
                             return sum;
                         }, 0);
 

@@ -1,4 +1,9 @@
-import express from 'express';
+
+
+
+// FIX: Use RequestHandler type to ensure correct type inference.
+// Changed to regular import to fix type resolution issues.
+import { RequestHandler } from 'express';
 import { ZodError, z } from 'zod';
 
 
@@ -6,7 +11,7 @@ import { ZodError, z } from 'zod';
  * Middleware to validate request body, query, or params against a Zod schema.
  * @param schema - The Zod schema to validate against.
  */
-export const validate = (schema: z.Schema): express.RequestHandler => (req, res, next) => {
+export const validate = (schema: z.Schema): RequestHandler => (req, res, next) => {
   try {
     schema.parse({
       body: req.body,

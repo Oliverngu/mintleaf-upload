@@ -81,7 +81,7 @@ const BookingDetailsModal: React.FC<{
         <div className="p-6 overflow-y-auto space-y-4">
           {bookings.length > 0 ? (
             bookings
-              .sort((a, b) => a.startTime.toMillis() - b.startTime.toMillis())
+              .sort((a, b) => a.startTime.toDate().getTime() - b.startTime.toDate().getTime())
               .map(booking => (
                 <div key={booking.id} className="bg-gray-50 p-4 rounded-xl border border-gray-200 relative group">
                    <p className="font-bold text-gray-800">{booking.name} ({booking.headcount} fő)</p>
