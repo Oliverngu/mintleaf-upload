@@ -1,5 +1,4 @@
-// @ts-nocheck
-import express, { Request, Response, NextFunction } from 'express';
+import express from 'express';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
@@ -8,13 +7,19 @@ import { protect } from '../middleware/auth';
 import { ApiError } from '../utils/errors';
 import { hasUnitAccess } from '../middleware/auth';
 import { db } from '../services/db'; // Mock DB
+// FIX: Added url and fileURLToPath to define __dirname in ES modules
+import { fileURLToPath } from 'url';
+
+// FIX: Define __dirname for ES module scope
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
 // --- Configuration for Multer (File Uploads) ---
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 const ALLOWED_MIME_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-// FIX: Use the globally available `__dirname` in a CommonJS environment.
+// In a CommonJS environment (which this project is configured for), __dirname is globally available.
 const UPLOAD_PATH = path.join(__dirname, '../../uploads');
 
 // Ensure upload directory exists
@@ -24,11 +29,11 @@ if (!fs.existsSync(UPLOAD_PATH)) {
 
 const storage = multer.diskStorage({
   // FIX: Replaced Express.Multer.File with multer.File to resolve type error.
-  destination: (req: Request, file: multer.File, cb: (error: Error | null, destination: string) => void) => {
+  destination: (req: express.Request, file: multer.File, cb: (error: Error | null, destination: string) => void) => {
     cb(null, UPLOAD_PATH);
   },
   // FIX: Replaced Express.Multer.File with multer.File to resolve type error.
-  filename: (req: Request, file: multer.File, cb: (error: Error | null, filename: string) => void) => {
+  filename: (req: express.Request, file: multer.File, cb: (error: Error | null, filename: string) => void) => {
     // Rename file with a UUID to prevent filename conflicts and directory traversal attacks
     const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
     cb(null, uniqueName);
@@ -39,7 +44,7 @@ const upload = multer({
   storage,
   limits: { fileSize: MAX_FILE_SIZE },
   // FIX: Replaced Express.Multer.File with multer.File to resolve type error.
-  fileFilter: (req: Request, file: multer.File, cb: multer.FileFilterCallback) => {
+  fileFilter: (req: express.Request, file: multer.File, cb: multer.FileFilterCallback) => {
     // Validate MIME type
     if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
       cb(null, true);
@@ -53,7 +58,7 @@ const upload = multer({
  * POST /api/files/upload
  * Upload a file. Requires authentication.
  */
-router.post('/upload', protect, upload.single('document'), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/upload', protect, upload.single('document'), async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   if (!req.file) {
     return next(new ApiError(400, 'No file uploaded.'));
   }
@@ -76,7 +81,7 @@ router.post('/upload', protect, upload.single('document'), async (req: Request, 
  * GET /api/files/download/:fileId
  * Securely download a file.
  */
-router.get('/download/:fileId', protect, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/download/:fileId', protect, async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     try {
         const fileId = req.params.fileId;
         

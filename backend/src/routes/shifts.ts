@@ -1,4 +1,4 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express from 'express';
 import { protect, authorize } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { createShiftSchema, updateShiftSchema } from '../validators/shiftValidators';
@@ -20,7 +20,7 @@ router.post(
   '/',
   authorize('Admin', 'Unit Admin'),
   validate(createShiftSchema),
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     try {
       const newShift = await createShift(req.body, req.user!);
       
@@ -45,7 +45,7 @@ router.put(
   '/:id',
   authorize('Admin', 'Unit Admin'),
   validate(updateShiftSchema),
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     try {
       const shiftId = req.params.id;
       const updatedShift = await updateShift(shiftId, req.body, req.user!);
